@@ -54,6 +54,9 @@ dependencies:
   http: ^1.1.0
   # GetX for routing and state management
   get: ^4.6.5
+  
+  # Crypto for token generation (HMAC-SHA256)
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

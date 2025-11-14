@@ -43,8 +43,10 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
-    _currentUserName = args['userName'] as String?;
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null && args is Map<String, dynamic>) {
+      _currentUserName = args['userName'] as String?;
+    }
   }
 
   @override
@@ -71,9 +73,8 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
     setState(() => _isJoining = true);
 
     try {
-      await _agora.initialize();
-      await _agora.joinChannel(channelName);
-      
+      // Defer Agora initialization until the Call screen has been pushed.
+      // This avoids heavy native/plugin init during the Flutter tool attach.
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -84,6 +85,7 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
           ),
         ),
       );
+      // The CallView will initialize and join the channel shortly after it's shown.
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,21 +136,6 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                     padding: const EdgeInsets.all(20.0),
                     child: Row(
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
                         Text(
                           'Join Channel',
                           style: TextStyle(

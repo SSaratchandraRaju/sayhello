@@ -71,8 +71,6 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    
     return Scaffold(
       body: Container(
         width: double.infinity,
