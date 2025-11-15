@@ -19,6 +19,16 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    packaging {
+        resources {
+            // Fix duplicate native libraries between agora_rtm and agora_rtc_engine
+            pickFirst("lib/arm64-v8a/libaosl.so")
+            pickFirst("lib/armeabi-v7a/libaosl.so")
+            pickFirst("lib/x86_64/libaosl.so")
+            pickFirst("lib/x86/libaosl.so")
+        }
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.vikrasoftech.sayhello"
@@ -28,6 +38,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Enable multidex for large apps
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -36,15 +49,41 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
             
-            // ProGuard rules for Agora SDK
+            // Enable code shrinking and obfuscation
             isMinifyEnabled = true
+            isShrinkResources = true  // Remove unused resources
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            // Strip native debug symbols
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
+        }
+        
+        debug {
+            // No minification or splits for debug builds
+            isMinifyEnabled = false
         }
     }
 }
+
+// Only split APKs for release builds (not debug)
+// This is handled automatically by the --split-per-abi flag
+// Comment out the splits block to avoid conflicts with debug builds
+/*
+splits {
+    abi {
+        isEnable = true
+        reset()
+        include("armeabi-v7a", "arm64-v8a", "x86_64")
+        isUniversalApk = false
+    }
+}
+*/
 
 flutter {
     source = "../.."

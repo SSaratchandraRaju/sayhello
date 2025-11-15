@@ -8,11 +8,13 @@ import '../services/agora_service.dart';
 class CallView extends StatefulWidget {
   final AgoraService agoraService;
   final String channelName;
+  final String? userName;
 
   const CallView({
     Key? key,
     required this.agoraService,
     required this.channelName,
+    this.userName,
   }) : super(key: key);
 
   @override
@@ -49,9 +51,12 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     _log('App lifecycle state changed to: $state');
     
     // Handle PIP mode when app goes to background
-    if (state == AppLifecycleState.paused) {
-      _log('App paused - entering PIP mode');
-      _enterPipMode();
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      // Only enter PIP if we're actually in a call
+      if (_isCallConnected && _remoteUid != null) {
+        _log('App paused/inactive with active call - entering PIP mode');
+        _enterPipMode();
+      }
     } else if (state == AppLifecycleState.resumed) {
       _log('App resumed from background');
     }
@@ -69,11 +74,17 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
   }
 
   Future<void> _initialize() async {
-  _log('Initializing Agora call screen for ${widget.channelName}');
+    _log('Initializing Agora call screen for ${widget.channelName}');
 
     // Initialize Agora engine and join the channel when the call screen is shown.
     try {
       await widget.agoraService.initialize();
+      
+      // Setup callback for when all users leave
+      widget.agoraService.onAllUsersLeft = () {
+        _log('All remote users left, ending call automatically');
+        _showRemoteUserLeftDialog();
+      };
       
       // Setup local video controller before joining
       _localController = VideoViewController(
@@ -129,8 +140,30 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
   }
 
   Future<void> _switchCamera() async {
-  _log('Switching camera');
+    _log('Switching camera');
     await widget.agoraService.switchCamera();
+  }
+
+  void _showRemoteUserLeftDialog() {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Call Ended'),
+        content: const Text('The other user has left the call.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _endCall();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _endCall() async {
@@ -148,7 +181,9 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     // Navigate back to home screen (not just pop)
     if (mounted) {
       // Use GetX to navigate back to home, clearing call screen from stack
-      Get.offAllNamed('/users');
+      Get.offAllNamed('/users', arguments: {
+        'userName': widget.userName,
+      });
     }
   }
 
@@ -193,12 +228,21 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     // Remove lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
     
+    // Clear the callback to avoid memory leaks
+    widget.agoraService.onAllUsersLeft = null;
+    
     // Cancel all stream subscriptions first
     _remotePollTimer?.cancel();
     _remoteController = null;
     try {
       _localController?.dispose();
     } catch (_) {}
+    
+    // Leave channel when widget is disposed (app killed or screen closed)
+    // This will notify other users
+    widget.agoraService.leaveChannel().catchError((e) {
+      _log('Error leaving channel in dispose: $e');
+    });
 
     super.dispose();
   }

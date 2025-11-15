@@ -82,6 +82,7 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
           builder: (context) => CallView(
             channelName: channelName,
             agoraService: _agora,
+            userName: _currentUserName,
           ),
         ),
       );

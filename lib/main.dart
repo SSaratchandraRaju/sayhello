@@ -106,7 +106,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
       navigatorKey: navigatorKey,
-      initialRoute: Routes.LOGIN,
+      initialRoute: Routes.PHONE_LOGIN,
       getPages: AppPages.pages,
     );
   }

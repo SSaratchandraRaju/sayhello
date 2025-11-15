@@ -10,11 +10,13 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.sayhello/pip"
+    private var methodChannel: MethodChannel? = null
     
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+        methodChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "enterPipMode" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -22,8 +24,8 @@ class MainActivity : FlutterActivity() {
                             val params = PictureInPictureParams.Builder()
                                 .setAspectRatio(Rational(9, 16)) // Portrait video ratio
                                 .build()
-                            enterPictureInPictureMode(params)
-                            result.success(true)
+                            val entered = enterPictureInPictureMode(params)
+                            result.success(entered)
                         } catch (e: Exception) {
                             result.error("PIP_ERROR", e.message, null)
                         }
@@ -36,11 +38,28 @@ class MainActivity : FlutterActivity() {
         }
     }
     
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // This is called when user presses home button
+        // Automatically enter PIP mode if supported
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(9, 16))
+                    .build()
+                enterPictureInPictureMode(params)
+            } catch (e: Exception) {
+                // PIP not available or failed
+            }
+        }
+    }
+    
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
         newConfig: Configuration
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
-        // You can handle UI changes here if needed
+        // Notify Flutter about PIP mode change
+        methodChannel?.invokeMethod("onPipModeChanged", isInPictureInPictureMode)
     }
 }

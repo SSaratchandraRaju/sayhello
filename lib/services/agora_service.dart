@@ -12,7 +12,8 @@ class AgoraService {
   // Replace DebugLogger with simple console prints
   void _logInfo(String msg) => print('[AGORA] $msg');
   void _logError(String msg) => print('[AGORA][ERROR] $msg');
-  late final RtcEngine _engine;
+  RtcEngine? _engine;
+  bool _isInitialized = false;
   int? _remoteUid;
   final remoteUidNotifier = ValueNotifier<int?>(null);
   bool _joined = false;
@@ -41,6 +42,9 @@ class AgoraService {
   /// Optional async token provider callback used to fetch/refresh tokens.
   /// Should return a fresh token for the current channel/uid.
   Future<String?> Function(String channel, int uid)? tokenProvider;
+  
+  /// Optional callback when all remote users have left the channel
+  Function()? onAllUsersLeft;
 
   /// Expose current token for debugging or external inspection.
   String? get currentToken => _currentToken;
@@ -51,15 +55,20 @@ class AgoraService {
   bool get isVideoMuted => _mutedVideo;
 
   Future<void> initialize() async {
-  _logInfo('Initializing Agora Engine');
+    if (_isInitialized && _engine != null) {
+      _logInfo('Agora Engine already initialized, skipping...');
+      return;
+    }
+    
+    _logInfo('Initializing Agora Engine');
     _engine = createAgoraRtcEngine();
-    await _engine.initialize(RtcEngineContext(
+    await _engine!.initialize(RtcEngineContext(
       appId: AppConfig.agoraAppId,
       channelProfile: ChannelProfileType.channelProfileCommunication,
     ));
 
     // register event handlers
-    _engine.registerEventHandler(RtcEngineEventHandler(
+    _engine!.registerEventHandler(RtcEngineEventHandler(
       onError: (ErrorCodeType code, String? msg) {
   _logError('Agora error: $code ${msg ?? ''}');
         // handle invalid token by attempting to refresh
@@ -80,26 +89,35 @@ class AgoraService {
   _logInfo('🎉 You should now see the remote user\'s video!');
       },
       onUserOffline: (connection, remoteUid, reason) {
-  _logInfo('User offline: $remoteUid, reason: $reason');
+        _logInfo('User offline: $remoteUid, reason: $reason');
         if (_remoteUid == remoteUid) {
           _remoteUid = null;
           remoteUidNotifier.value = null;
+          
+          // Notify that all users have left (in a 1-on-1 call scenario)
+          // For multi-user support, you'd track all remote UIDs
+          if (onAllUsersLeft != null) {
+            _logInfo('All remote users left, triggering callback');
+            onAllUsersLeft!();
+          }
         }
       },
       onLeaveChannel: (connection, stats) {
-  _joined = false;
-  _remoteUid = null;
-  remoteUidNotifier.value = null;
-  _logInfo('Left channel');
+        _joined = false;
+        _remoteUid = null;
+        remoteUidNotifier.value = null;
+        _logInfo('Left channel');
         // Clear stored channel/token on leave
         _currentChannel = null;
         _currentToken = null;
       },
       onTokenPrivilegeWillExpire: (connection, token) async {
-  _logInfo('Token privilege will expire soon');
+        _logInfo('Token privilege will expire soon');
         await _attemptTokenRefresh();
       },
     ));
+    
+    _isInitialized = true;
   }
 
   Future<bool> _ensurePermissions() async {
@@ -143,8 +161,8 @@ class AgoraService {
     _currentUid = uid;
 
     // enable video & audio
-    await _engine.enableVideo();
-    await _engine.startPreview();
+    await _engine!.enableVideo();
+    await _engine!.startPreview();
 
     final joinToken = token ?? AppConfig.tempToken ?? '';
     if (joinToken.isEmpty) {
@@ -154,7 +172,7 @@ class AgoraService {
     }
 
     _logInfo('📡 Attempting to join channel: $channelName with UID: $uid');
-    await _engine.joinChannel(
+    await _engine!.joinChannel(
       token: joinToken,
       channelId: channelName,
       uid: uid,
@@ -224,7 +242,7 @@ class AgoraService {
 
       _currentToken = newToken;
       _logInfo('Renewing Agora token (fallback=${tokenProvider==null})');
-      await _engine.renewToken(newToken);
+      await _engine!.renewToken(newToken);
       _logInfo('Token renewed successfully');
 
       // reset failure counter on success and record token/time
@@ -268,41 +286,45 @@ class AgoraService {
   }
 
   // Expose engine for creating video controllers
-  RtcEngine get engine => _engine;
+  RtcEngine get engine => _engine!;
 
   Future<void> leaveChannel() async {
-  _logInfo('Leaving channel');
-    await _engine.leaveChannel();
-    await _engine.stopPreview();
+    _logInfo('Leaving channel');
+    await _engine!.leaveChannel();
+    await _engine!.stopPreview();
     _joined = false;
     _remoteUid = null;
   }
 
   Future<void> toggleAudio() async {
     _mutedAudio = !_mutedAudio;
-    await _engine.muteLocalAudioStream(_mutedAudio);
-  _logInfo('Audio ${_mutedAudio ? 'muted' : 'unmuted'}');
+    await _engine!.muteLocalAudioStream(_mutedAudio);
+    _logInfo('Audio ${_mutedAudio ? 'muted' : 'unmuted'}');
   }
 
   Future<void> toggleVideo() async {
     _mutedVideo = !_mutedVideo;
-    await _engine.muteLocalVideoStream(_mutedVideo);
+    await _engine!.muteLocalVideoStream(_mutedVideo);
     if (_mutedVideo) {
-      await _engine.stopPreview();
+      await _engine!.stopPreview();
     } else {
-      await _engine.startPreview();
+      await _engine!.startPreview();
     }
-  _logInfo('Video ${_mutedVideo ? 'disabled' : 'enabled'}');
+    _logInfo('Video ${_mutedVideo ? 'disabled' : 'enabled'}');
   }
 
   Future<void> switchCamera() async {
-  _logInfo('Switching camera');
-    await _engine.switchCamera();
+    _logInfo('Switching camera');
+    await _engine!.switchCamera();
   }
 
   // Dispose the engine when app exits or service no longer needed
   Future<void> dispose() async {
-  _logInfo('Disposing Agora engine');
-    await _engine.release();
+    _logInfo('Disposing Agora engine');
+    if (_engine != null) {
+      await _engine!.release();
+      _engine = null;
+      _isInitialized = false;
+    }
   }
 }
