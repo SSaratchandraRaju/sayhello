@@ -185,7 +185,26 @@ class AgoraRtmService {
       final status = result.$1;
       if (!status.error) {
         debugPrint('[RTM] ✅ Subscribed to $channelName');
-        await _fetchOnlineUsers();
+        
+        // CRITICAL: Set presence state to notify other users
+        try {
+          await _rtmClient!.getPresence().setState(
+            channelName,
+            RtmChannelType.stream,
+            {'status': 'online', 'userId': _currentUserId!, 'timestamp': DateTime.now().millisecondsSinceEpoch.toString()},
+          );
+          debugPrint('[RTM] ✅ Presence state set for $_currentUserId');
+        } catch (e) {
+          debugPrint('[RTM] ⚠️  setState failed: $e');
+        }
+        
+        // In Testing Mode, whoNow() and getOnlineUsers() don't work reliably
+        // We rely ONLY on presence events (snapshot, remoteJoin, remoteLeave)
+        // which ARE working correctly
+        debugPrint('[RTM] ✅ Relying on presence events for online users (Testing Mode)');
+        
+        // Notify with current state (initially empty, will be updated by presence events)
+        onOnlineUsersUpdated?.call(_onlineUserIds);
       } else {
         debugPrint('[RTM] ❌ Subscribe failed: ${status.reason}');
       }
@@ -195,75 +214,53 @@ class AgoraRtmService {
   }
 
   /// Fetch current online users
-  Future<void> _fetchOnlineUsers() async {
-    if (_rtmClient == null) return;
-
+  /// Public method to manually refresh online users
+  /// Tries to get fresh data from RTM, falls back to cached state
+  Future<void> refreshOnlineUsers() async {
+    if (_rtmClient == null || !_isInitialized) {
+      debugPrint('[RTM] ❌ Cannot refresh - not initialized');
+      return;
+    }
+    
+    debugPrint('[RTM] 🔄 Manual refresh requested...');
+    
+    // Try to get fresh online users from RTM presence
     try {
-      debugPrint('[RTM] 👥 Fetching online users via getOnlineUsers...');
-      
-      // Use RTM's getOnlineUsers API
       final result = await _rtmClient!.getPresence().getOnlineUsers(
         'online_users',
         RtmChannelType.stream,
       );
       
       final status = result.$1;
-      final response = result.$2;
-      
-      debugPrint('[RTM] 🔍 Response status.error: ${status.error}');
-      debugPrint('[RTM] 🔍 Response object: $response');
-      debugPrint('[RTM] 🔍 Response type: ${response?.runtimeType}');
-      
-      if (!status.error && response != null) {
-        try {
-          // Try to access userStateList
-          debugPrint('[RTM] 🔍 Trying to access userStateList...');
-          final userStateList = response.userStateList;
-          debugPrint('[RTM] 🔍 userStateList: $userStateList');
-          debugPrint('[RTM] 🔍 userStateList length: ${userStateList.length}');
-          
-          if (userStateList.isNotEmpty) {
-            _onlineUserIds.clear();
-            for (var userState in userStateList) {
-              try {
-                debugPrint('[RTM] 🔍 UserState: $userState');
-                final userId = userState.userId;
-                debugPrint('[RTM] 🔍 UserId: $userId');
-                if (userId != null && userId != _currentUserId) {
-                  _onlineUserIds.add(userId);
-                }
-              } catch (e) {
-                debugPrint('[RTM] ⚠️  Cannot parse user state: $e');
-              }
+      if (!status.error) {
+        final response = result.$2;
+        if (response != null && response.userStateList.isNotEmpty) {
+          final Set<String> freshUsers = {};
+          for (var userState in response.userStateList) {
+            final userId = userState.userId;
+            if (userId != null && userId != _currentUserId) {
+              freshUsers.add(userId);
             }
-            debugPrint('[RTM] ✅ Fetched ${_onlineUserIds.length} online users from API');
-            onOnlineUsersUpdated?.call(_onlineUserIds);
-          } else {
-            debugPrint('[RTM] ⚠️  userStateList is empty or null');
-            // Keep existing online users from presence events
-            debugPrint('[RTM] 📊 Keeping ${_onlineUserIds.length} users from presence events');
-            onOnlineUsersUpdated?.call(_onlineUserIds);
           }
-        } catch (e) {
-          debugPrint('[RTM] ⚠️  Cannot parse user list: $e');
-          // Keep existing online users from presence events
+          
+          // Update with fresh data
+          _onlineUserIds.clear();
+          _onlineUserIds.addAll(freshUsers);
+          
+          debugPrint('[RTM] ✅ Refresh success: ${_onlineUserIds.length} users online: ${_onlineUserIds.toList()}');
           onOnlineUsersUpdated?.call(_onlineUserIds);
+          return;
         }
       } else {
-        debugPrint('[RTM] ❌ getOnlineUsers failed: ${status.reason}');
-        // Keep existing online users from presence events
-        onOnlineUsersUpdated?.call(_onlineUserIds);
+        debugPrint('[RTM] ⚠️ getOnlineUsers failed: ${status.reason} (Testing Mode limitation)');
       }
     } catch (e) {
-      debugPrint('[RTM] ❌ Error fetching online users: $e');
-      // Keep existing online users from presence events
-      onOnlineUsersUpdated?.call(_onlineUserIds);
+      debugPrint('[RTM] ⚠️ getOnlineUsers error: $e (Testing Mode limitation)');
     }
-  }
-
-  /// Public method to manually refresh online users
-  Future<void> refreshOnlineUsers() async {
-    await _fetchOnlineUsers();
+    
+    // Fallback: notify with current cached state
+    debugPrint('[RTM] 🔄 Fallback: notifying with cached state: ${_onlineUserIds.length} users');
+    onOnlineUsersUpdated?.call(_onlineUserIds);
   }
 
   // ===== EVENT HANDLERS =====
@@ -354,35 +351,56 @@ class AgoraRtmService {
           // Snapshot event - contains all current online users
           try {
             final snapshot = event.snapshot;
-            if (snapshot != null && snapshot is List) {
-              _onlineUserIds.clear();
-              for (var userState in snapshot) {
-                try {
-                  final userId = userState.userId ?? userState.toString();
-                  if (userId != _currentUserId) {
-                    _onlineUserIds.add(userId);
+            debugPrint('[RTM] 📊 Snapshot raw data: $snapshot (type: ${snapshot.runtimeType})');
+            
+            if (snapshot != null) {
+              final Set<String> snapshotUsers = {};
+              
+              // Try to access userStateList from SnapshotInfo object
+              try {
+                final userStateList = snapshot.userStateList;
+                debugPrint('[RTM] 📊 Snapshot userStateList: ${userStateList?.length ?? 0} users');
+                
+                if (userStateList != null && userStateList.isNotEmpty) {
+                  for (var userState in userStateList) {
+                    try {
+                      final userId = userState.userId;
+                      if (userId != null && userId != _currentUserId) {
+                        snapshotUsers.add(userId);
+                        debugPrint('[RTM] 📊 Snapshot user: $userId');
+                      }
+                    } catch (e) {
+                      debugPrint('[RTM] Cannot parse user state: $e');
+                    }
                   }
-                } catch (e) {
-                  debugPrint('[RTM] Cannot parse user state: $e');
                 }
+              } catch (e) {
+                debugPrint('[RTM] ⚠️ Cannot access userStateList: $e');
               }
-              debugPrint('[RTM] 📊 Snapshot: ${_onlineUserIds.length} users online');
+              
+              // Replace the entire set with snapshot data (this is the source of truth)
+              _onlineUserIds.clear();
+              _onlineUserIds.addAll(snapshotUsers);
+              
+              debugPrint('[RTM] 📊 Snapshot processed: ${_onlineUserIds.length} users online: ${_onlineUserIds.toList()}');
               onOnlineUsersUpdated?.call(_onlineUserIds);
+            } else {
+              debugPrint('[RTM] ⚠️ Snapshot is null');
             }
           } catch (e) {
-            debugPrint('[RTM] Cannot parse snapshot: $e');
+            debugPrint('[RTM] ❌ Cannot parse snapshot: $e');
           }
         } else if (eventType.toString().contains('remoteJoin')) {
           // User joined
           try {
             final userId = event.publisher ?? event.userId;
             if (userId != null && userId != _currentUserId) {
-              _onlineUserIds.add(userId);
-              debugPrint('[RTM] ✅ User joined: $userId');
+              final wasAdded = _onlineUserIds.add(userId);
+              debugPrint('[RTM] ✅ User joined: $userId (new: $wasAdded, total: ${_onlineUserIds.length})');
               onOnlineUsersUpdated?.call(_onlineUserIds);
             }
           } catch (e) {
-            debugPrint('[RTM] Cannot parse join event: $e');
+            debugPrint('[RTM] ❌ Cannot parse join event: $e');
           }
         } else if (eventType.toString().contains('remoteLeave') || 
                    eventType.toString().contains('remoteTimeout')) {
@@ -390,13 +408,15 @@ class AgoraRtmService {
           try {
             final userId = event.publisher ?? event.userId;
             if (userId != null) {
-              _onlineUserIds.remove(userId);
-              debugPrint('[RTM] ❌ User left: $userId');
+              final wasRemoved = _onlineUserIds.remove(userId);
+              debugPrint('[RTM] ❌ User left: $userId (removed: $wasRemoved, remaining: ${_onlineUserIds.length})');
               onOnlineUsersUpdated?.call(_onlineUserIds);
             }
           } catch (e) {
-            debugPrint('[RTM] Cannot parse leave event: $e');
+            debugPrint('[RTM] ❌ Cannot parse leave event: $e');
           }
+        } else {
+          debugPrint('[RTM] ⚠️ Unknown event type: $eventType');
         }
       } catch (e) {
         debugPrint('[RTM] ⚠️  Cannot parse presence details: $e');

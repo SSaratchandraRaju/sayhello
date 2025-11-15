@@ -36,8 +36,9 @@ class OnlineUsersService {
       
       // Listen for online users updates from RTM
       _rtmService.onOnlineUsersUpdated = (Set<String> userIds) {
-        onlineUserIds.value = userIds;
-        debugPrint('[ONLINE_USERS] Updated from RTM: ${userIds.length} users online');
+        // Create a new Set to trigger ValueNotifier listeners
+        onlineUserIds.value = Set<String>.from(userIds);
+        debugPrint('[ONLINE_USERS] Updated from RTM: ${userIds.length} users online: ${userIds.toList()}');
       };
       
       debugPrint('[ONLINE_USERS] Current user set with RTM: ${user.name} (${user.id})');
@@ -116,4 +117,10 @@ class OnlineUsersService {
   
   // Get RTM service instance
   AgoraRtmService get rtmService => _rtmService;
+  
+  // Manually refresh online users from RTM
+  Future<void> refreshOnlineUsers() async {
+    debugPrint('[ONLINE_USERS] Requesting refresh from RTM...');
+    await _rtmService.refreshOnlineUsers();
+  }
 }

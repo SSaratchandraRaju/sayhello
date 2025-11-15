@@ -37,6 +37,15 @@ class _UsersListViewState extends State<UsersListView> {
     _rtmService.onIncomingCall = (Map<String, dynamic> callData) {
       debugPrint('[USERS_LIST] Incoming call from ${callData['callerName']}');
       
+      // Don't show incoming call if already in a call
+      final currentRoute = Get.currentRoute;
+      if (currentRoute == '/video-call' || currentRoute == '/voice-call') {
+        debugPrint('[USERS_LIST] ⚠️ Already in a call, auto-declining incoming call');
+        // Auto-decline because user is busy
+        _rtmService.sendCallDeclined(callerId: callData['callerId'] as String);
+        return;
+      }
+      
       // Show incoming call screen
       if (mounted) {
         Navigator.of(context).push(
@@ -70,6 +79,12 @@ class _UsersListViewState extends State<UsersListView> {
     _rtmService.onCallDeclined = (Map<String, dynamic> responseData) {
       final receiverId = responseData['receiverId'] ?? 'Unknown';
       debugPrint('[USERS_LIST] Call declined by $receiverId');
+      
+      // Pop back to users list if we're in a call screen
+      if (Get.currentRoute == '/video-call' || Get.currentRoute == '/voice-call') {
+        Get.back();
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Call declined'),
@@ -90,16 +105,54 @@ class _UsersListViewState extends State<UsersListView> {
   void _updateOnlineUsers() {
     if (mounted) {
       setState(() {
-        _onlineUsers = _allUsers
-            .where((user) => 
-                // Exclude current user and only show online users
-                user.id != _onlineService.currentUser?.id &&
-                _onlineService.isUserOnline(user.id)
-            )
-            .map((user) => user.copyWith(isOnline: true))
-            .toList();
+        // Get all online user IDs from RTM
+        final onlineIds = _onlineService.onlineUserIds.value;
+        
+        // Create a list of online users
+        _onlineUsers = [];
+        
+        for (final userId in onlineIds) {
+          // Skip current user
+          if (userId == _onlineService.currentUser?.id) continue;
+          
+          // Try to find user in predefined list
+          UserModel? user = _allUsers.firstWhere(
+            (u) => u.id == userId,
+            orElse: () => UserModel(
+              id: userId,
+              name: _extractNameFromUserId(userId),
+              age: 0,
+              gender: 'Unknown',
+              location: 'Unknown',
+              isOnline: true,
+              agoraUid: userId,
+            ),
+          );
+          
+          _onlineUsers.add(user.copyWith(isOnline: true));
+        }
+        
+        debugPrint('[USERS_LIST] Updated UI: ${_onlineUsers.length} online users');
       });
     }
+  }
+  
+  /// Extract display name from user ID
+  /// Examples: user_001 → User 1, user_vs_jk_ksjsjd_9860 → Vs Jk Ksjsjd
+  String _extractNameFromUserId(String userId) {
+    // Remove 'user_' prefix
+    String name = userId.replaceFirst('user_', '');
+    
+    // If it ends with numbers (like _9860), remove them
+    name = name.replaceAll(RegExp(r'_\d+$'), '');
+    
+    // Replace underscores with spaces and capitalize
+    name = name.split('_').map((word) {
+      if (word.isEmpty) return '';
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+    
+    return name.isEmpty ? 'User' : name;
   }
 
   Future<void> _loadUsers() async {
@@ -127,6 +180,8 @@ class _UsersListViewState extends State<UsersListView> {
   }
 
   Future<void> _refreshOnlineUsers() async {
+    debugPrint('[USERS_LIST] Manual refresh triggered');
+    
     // Show loading indicator
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -148,14 +203,13 @@ class _UsersListViewState extends State<UsersListView> {
       ),
     );
 
-    // Fetch online users from RTM
-    await _rtmService.refreshOnlineUsers();
+    // Fetch online users from RTM (will try getOnlineUsers API first)
+    await _onlineService.refreshOnlineUsers();
     
-    if (mounted) {
-      setState(() {
-        _updateOnlineUsers();
-      });
-    }
+    // The _updateOnlineUsers will be called automatically by the listener
+    // when onOnlineUsersUpdated callback is triggered
+    
+    debugPrint('[USERS_LIST] Manual refresh completed');
   }
 
   void _initiateCall(UserModel user, bool isVideo) async {

@@ -7,6 +7,10 @@
 -keep class io.agora.rtc2.** { *; }
 -keep class io.agora.base.** { *; }
 
+# Agora RTM SDK (added for RTM support)
+-keep class io.agora.rtm.** { *; }
+-dontwarn io.agora.rtm.**
+
 # WebRTC
 -keep class org.webrtc.** { *; }
 -dontwarn org.webrtc.**
@@ -28,10 +32,22 @@
 -dontusemixedcaseclassnames
 -dontskipnonpubliclibraryclasses
 -verbose
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
 
-# Remove logging in release
+# Remove all logging in release (reduces APK size)
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
     public static *** v(...);
     public static *** i(...);
+    public static *** w(...);
+    public static *** e(...);
 }
+
+# Remove debug print statements
+-assumenosideeffects class kotlin.io.ConsoleKt {
+    public static *** println(...);
+}
+
+# Additional size optimizations
+-repackageclasses ''
+-allowaccessmodification

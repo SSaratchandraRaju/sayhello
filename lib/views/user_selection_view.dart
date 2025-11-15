@@ -381,6 +381,33 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    // Create Custom Profile Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Get.toNamed('/profile-setup');
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.white, width: 2),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text(
+                          'Create Custom Profile',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () {

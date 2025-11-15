@@ -30,36 +30,27 @@ class _VideoCallViewState extends State<VideoCallView> {
   bool _isFrontCamera = true;
   bool _isRemoteUserJoined = false;
   int _remoteUid = 0;
+  bool _isVideoSwapped = false; // For swapping videos between main and PiP
+  bool _isRemoteVideoEnabled = true; // Track remote user's video state
   
   int _callDuration = 0;
   Timer? _callTimer;
   
   bool _isInitialized = false;
   bool _showLowCreditsWarning = false;
-  bool _showControls = true;
-  Timer? _controlsTimer;
 
   @override
   void initState() {
     super.initState();
     _initializeAgora();
-    _startControlsTimer();
   }
 
-  void _startControlsTimer() {
-    _controlsTimer?.cancel();
-    _controlsTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        setState(() => _showControls = false);
-      }
+  // Swap videos between main view and PiP
+  void _swapVideos() {
+    setState(() {
+      _isVideoSwapped = !_isVideoSwapped;
     });
-  }
-
-  void _toggleControlsVisibility() {
-    setState(() => _showControls = !_showControls);
-    if (_showControls) {
-      _startControlsTimer();
-    }
+    debugPrint('[VIDEO] Swapped videos: $_isVideoSwapped');
   }
 
   Future<void> _initializeAgora() async {
@@ -103,6 +94,18 @@ class _VideoCallViewState extends State<VideoCallView> {
               _remoteUid = 0;
             });
             _endCall(isRemoteUserLeft: true);
+          },
+          onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
+            debugPrint('[AGORA] Remote video state changed: uid=$remoteUid, state=$state, reason=$reason');
+            if (remoteUid == _remoteUid) {
+              setState(() {
+                // RemoteVideoState.stopped (0) or RemoteVideoState.frozen (1) = video off
+                // RemoteVideoState.decoding (2) or RemoteVideoState.starting (1) = video on
+                _isRemoteVideoEnabled = (state == RemoteVideoState.remoteVideoStateDecoding || 
+                                        state == RemoteVideoState.remoteVideoStateStarting);
+                debugPrint('[AGORA] Remote video enabled: $_isRemoteVideoEnabled');
+              });
+            }
           },
           onError: (ErrorCodeType err, String msg) {
             debugPrint('[AGORA] Error: $err - $msg');
@@ -181,7 +184,6 @@ class _VideoCallViewState extends State<VideoCallView> {
 
   Future<void> _endCall({bool isRemoteUserLeft = false}) async {
     _callTimer?.cancel();
-    _controlsTimer?.cancel();
     _creditsService.stopCall();
     _creditsService.onCreditsExhausted = null;
     
@@ -246,7 +248,6 @@ class _VideoCallViewState extends State<VideoCallView> {
   @override
   void dispose() {
     _callTimer?.cancel();
-    _controlsTimer?.cancel();
     _creditsService.stopCall();
     _creditsService.onCreditsExhausted = null;
     if (_engine != null) {
@@ -290,19 +291,76 @@ class _VideoCallViewState extends State<VideoCallView> {
       child: Scaffold(
         backgroundColor: Colors.black,
         body: GestureDetector(
-          onTap: _toggleControlsVisibility,
+          onTap: _swapVideos, // Swap videos on tap
           child: Stack(
             children: [
-              // Remote video (full screen)
+              // Main video (either remote or local based on swap state)
               if (_isRemoteUserJoined)
                 SizedBox.expand(
-                  child: AgoraVideoView(
-                    controller: VideoViewController.remote(
-                      rtcEngine: _engine!,
-                      canvas: VideoCanvas(uid: _remoteUid),
-                      connection: RtcConnection(channelId: widget.channelName),
-                    ),
-                  ),
+                  child: _isVideoSwapped
+                      ? // Show local video in main view when swapped
+                      (_isVideoEnabled
+                          ? AgoraVideoView(
+                              controller: VideoViewController(
+                                rtcEngine: _engine!,
+                                canvas: const VideoCanvas(uid: 0),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.black,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.videocam_off,
+                                  size: 80,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ))
+                      : // Show remote video in main view when not swapped
+                      (_isRemoteVideoEnabled
+                          ? AgoraVideoView(
+                              controller: VideoViewController.remote(
+                                rtcEngine: _engine!,
+                                canvas: VideoCanvas(uid: _remoteUid),
+                                connection: RtcConnection(channelId: widget.channelName),
+                              ),
+                            )
+                          : // Remote video is disabled - show placeholder
+                          Container(
+                              color: Colors.black,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: const Color(0xFF667eea).withOpacity(0.3),
+                                        border: Border.all(
+                                          color: const Color(0xFF667eea),
+                                          width: 3,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.videocam_off,
+                                        size: 60,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'Camera is off',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )),
                 )
               else
                 // Waiting for remote user
@@ -365,47 +423,154 @@ class _VideoCallViewState extends State<VideoCallView> {
                   ),
                 ),
 
-              // Local video (small preview at top right)
-              if (_isInitialized && _isVideoEnabled)
+              // PiP video (small preview at top right corner - professional design)
+              if (_isInitialized && _isRemoteUserJoined)
                 Positioned(
-                  top: 60,
-                  right: 16,
-                  child: Container(
-                    width: 120,
-                    height: 160,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: AgoraVideoView(
-                        controller: VideoViewController(
-                          rtcEngine: _engine!,
-                          canvas: const VideoCanvas(uid: 0),
+                  top: 80, // More space from top to avoid status bar
+                  right: 20,
+                  child: GestureDetector(
+                    onTap: _swapVideos,
+                    child: Container(
+                      width: 110,
+                      height: 160,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.6),
+                            blurRadius: 15,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // PiP video content with black background
+                            Container(
+                              color: Colors.black,
+                              child: _isVideoSwapped
+                                  ? // Show remote video in PiP when swapped
+                                  (_isRemoteVideoEnabled
+                                      ? AgoraVideoView(
+                                          controller: VideoViewController.remote(
+                                            rtcEngine: _engine!,
+                                            canvas: VideoCanvas(uid: _remoteUid),
+                                            connection: RtcConnection(channelId: widget.channelName),
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: Icon(
+                                            Icons.videocam_off,
+                                            size: 40,
+                                            color: Colors.white54,
+                                          ),
+                                        ))
+                                  : // Show local video in PiP when not swapped
+                                  (_isVideoEnabled
+                                      ? AgoraVideoView(
+                                          controller: VideoViewController(
+                                            rtcEngine: _engine!,
+                                            canvas: const VideoCanvas(uid: 0),
+                                          ),
+                                        )
+                                      : const Center(
+                                          child: Icon(
+                                            Icons.videocam_off,
+                                            size: 40,
+                                            color: Colors.white54,
+                                          ),
+                                        )),
+                            ),
+                            
+                            // Gradient overlay at bottom for better text visibility
+                            Positioned(
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withOpacity(0.7),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            // Label at bottom indicating who's in PiP
+                            Positioned(
+                              bottom: 6,
+                              left: 6,
+                              right: 6,
+                              child: Text(
+                                _isVideoSwapped ? widget.user.name : 'You',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black87,
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            
+                            // Tap to swap indicator
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Icon(
+                                  Icons.swap_vert,
+                                  size: 16,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
 
-              // Controls overlay
-              if (_showControls)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.7),
-                          Colors.transparent,
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.8),
-                        ],
-                        stops: const [0.0, 0.2, 0.7, 1.0],
-                      ),
+              // Controls overlay (always visible)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.7),
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.8),
+                      ],
+                      stops: const [0.0, 0.2, 0.7, 1.0],
                     ),
+                  ),
                     child: SafeArea(
                       child: Column(
                         children: [

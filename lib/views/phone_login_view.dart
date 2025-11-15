@@ -70,6 +70,11 @@ class _PhoneLoginViewState extends State<PhoneLoginView> {
     );
   }
 
+  void _skipLogin() {
+    // Skip directly to profile setup for testing
+    Get.offAllNamed('/profile-setup');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -88,10 +93,36 @@ class _PhoneLoginViewState extends State<PhoneLoginView> {
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
+          child: Stack(
+            children: [
+              // Skip Button
+              Positioned(
+                top: 16,
+                right: 16,
+                child: TextButton.icon(
+                  onPressed: _skipLogin,
+                  icon: const Icon(Icons.skip_next, color: Colors.white),
+                  label: const Text(
+                    'Skip',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // App Logo/Title
@@ -281,6 +312,8 @@ class _PhoneLoginViewState extends State<PhoneLoginView> {
                 ],
               ),
             ),
+              ),
+            ],
           ),
         ),
       ),

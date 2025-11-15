@@ -58,9 +58,9 @@ android {
                 "proguard-rules.pro"
             )
             
-            // Strip native debug symbols
+            // Strip native debug symbols completely for smaller APK
             ndk {
-                debugSymbolLevel = "SYMBOL_TABLE"
+                debugSymbolLevel = "NONE"
             }
         }
         
@@ -68,6 +68,11 @@ android {
             // No minification or splits for debug builds
             isMinifyEnabled = false
         }
+    }
+    
+    // Add optimization configurations
+    buildFeatures {
+        buildConfig = true
     }
 }
 

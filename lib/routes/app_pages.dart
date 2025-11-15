@@ -7,6 +7,7 @@ import '../views/preferences_view.dart';
 import '../views/users_list_view.dart';
 import '../views/voice_call_view.dart';
 import '../views/video_call_view.dart';
+import '../views/profile_setup_screen.dart';
 import '../views/login_view.dart';
 import '../views/home_view.dart';
 import '../views/call_view.dart';
@@ -21,6 +22,7 @@ class AppPages {
     GetPage(name: Routes.USER_SELECTION, page: () => const UserSelectionView()),
     GetPage(name: Routes.PREFERENCES, page: () => const PreferencesView()),
     GetPage(name: Routes.USERS_LIST, page: () => const UsersListView()),
+    GetPage(name: Routes.PROFILE_SETUP, page: () => const ProfileSetupScreen()),
     
     // Voice and Video Call routes
     GetPage(

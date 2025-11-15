@@ -79,7 +79,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
       
       // Navigate to user selection screen
       if (mounted) {
-        Get.offAllNamed('/user-selection');
+        Get.offAllNamed('/profile-setup');
       }
     } else {
       setState(() => _isLoading = false);
@@ -96,6 +96,11 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
+  }
+
+  void _skipOTP() {
+    // Skip directly to profile setup for testing
+    Get.offAllNamed('/profile-setup');
   }
 
   @override
@@ -118,15 +123,38 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
         child: SafeArea(
           child: Column(
             children: [
-              // Back Button
+              // Header with Back and Skip buttons
               Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Get.back(),
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Back Button
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Get.back(),
+                    ),
+                    // Skip Button
+                    TextButton.icon(
+                      onPressed: _skipOTP,
+                      icon: const Icon(Icons.skip_next, color: Colors.white),
+                      label: const Text(
+                        'Skip',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               
