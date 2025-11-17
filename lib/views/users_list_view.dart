@@ -5,6 +5,7 @@ import '../services/credits_service.dart';
 import '../services/online_users_service.dart';
 import '../services/agora_rtm_service.dart';
 import 'incoming_call_screen.dart';
+import 'chat_view.dart';
 
 class UsersListView extends StatefulWidget {
   const UsersListView({Key? key}) : super(key: key);
@@ -25,10 +26,10 @@ class _UsersListViewState extends State<UsersListView> {
   void initState() {
     super.initState();
     _loadUsers();
-    
+
     // Listen to online users changes
     _onlineService.onlineUserIds.addListener(_updateOnlineUsers);
-    
+
     // Setup RTM incoming call listener
     _setupIncomingCallListener();
   }
@@ -36,16 +37,18 @@ class _UsersListViewState extends State<UsersListView> {
   void _setupIncomingCallListener() {
     _rtmService.onIncomingCall = (Map<String, dynamic> callData) {
       debugPrint('[USERS_LIST] Incoming call from ${callData['callerName']}');
-      
+
       // Don't show incoming call if already in a call
       final currentRoute = Get.currentRoute;
       if (currentRoute == '/video-call' || currentRoute == '/voice-call') {
-        debugPrint('[USERS_LIST] ⚠️ Already in a call, auto-declining incoming call');
+        debugPrint(
+          '[USERS_LIST] ⚠️ Already in a call, auto-declining incoming call',
+        );
         // Auto-decline because user is busy
         _rtmService.sendCallDeclined(callerId: callData['callerId'] as String);
         return;
       }
-      
+
       // Show incoming call screen
       if (mounted) {
         Navigator.of(context).push(
@@ -61,7 +64,7 @@ class _UsersListViewState extends State<UsersListView> {
         );
       }
     };
-    
+
     // Listen for call acceptance
     _rtmService.onCallAccepted = (Map<String, dynamic> responseData) {
       final receiverId = responseData['receiverId'] ?? 'Unknown';
@@ -74,17 +77,18 @@ class _UsersListViewState extends State<UsersListView> {
         ),
       );
     };
-    
+
     // Listen for call decline
     _rtmService.onCallDeclined = (Map<String, dynamic> responseData) {
       final receiverId = responseData['receiverId'] ?? 'Unknown';
       debugPrint('[USERS_LIST] Call declined by $receiverId');
-      
+
       // Pop back to users list if we're in a call screen
-      if (Get.currentRoute == '/video-call' || Get.currentRoute == '/voice-call') {
+      if (Get.currentRoute == '/video-call' ||
+          Get.currentRoute == '/voice-call') {
         Get.back();
       }
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Call declined'),
@@ -107,14 +111,14 @@ class _UsersListViewState extends State<UsersListView> {
       setState(() {
         // Get all online user IDs from RTM
         final onlineIds = _onlineService.onlineUserIds.value;
-        
+
         // Create a list of online users
         _onlineUsers = [];
-        
+
         for (final userId in onlineIds) {
           // Skip current user
           if (userId == _onlineService.currentUser?.id) continue;
-          
+
           // Try to find user in predefined list
           UserModel? user = _allUsers.firstWhere(
             (u) => u.id == userId,
@@ -128,30 +132,35 @@ class _UsersListViewState extends State<UsersListView> {
               agoraUid: userId,
             ),
           );
-          
+
           _onlineUsers.add(user.copyWith(isOnline: true));
         }
-        
-        debugPrint('[USERS_LIST] Updated UI: ${_onlineUsers.length} online users');
+
+        debugPrint(
+          '[USERS_LIST] Updated UI: ${_onlineUsers.length} online users',
+        );
       });
     }
   }
-  
+
   /// Extract display name from user ID
   /// Examples: user_001 → User 1, user_vs_jk_ksjsjd_9860 → Vs Jk Ksjsjd
   String _extractNameFromUserId(String userId) {
     // Remove 'user_' prefix
     String name = userId.replaceFirst('user_', '');
-    
+
     // If it ends with numbers (like _9860), remove them
     name = name.replaceAll(RegExp(r'_\d+$'), '');
-    
+
     // Replace underscores with spaces and capitalize
-    name = name.split('_').map((word) {
-      if (word.isEmpty) return '';
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
-    
+    name = name
+        .split('_')
+        .map((word) {
+          if (word.isEmpty) return '';
+          return word[0].toUpperCase() + word.substring(1).toLowerCase();
+        })
+        .join(' ');
+
     return name.isEmpty ? 'User' : name;
   }
 
@@ -171,7 +180,7 @@ class _UsersListViewState extends State<UsersListView> {
 
     // Simulate API call and use test data
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     setState(() {
       _allUsers = UserModel.generateRandomUsers();
       _updateOnlineUsers();
@@ -181,7 +190,7 @@ class _UsersListViewState extends State<UsersListView> {
 
   Future<void> _refreshOnlineUsers() async {
     debugPrint('[USERS_LIST] Manual refresh triggered');
-    
+
     // Show loading indicator
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -205,11 +214,20 @@ class _UsersListViewState extends State<UsersListView> {
 
     // Fetch online users from RTM (will try getOnlineUsers API first)
     await _onlineService.refreshOnlineUsers();
-    
+
     // The _updateOnlineUsers will be called automatically by the listener
     // when onOnlineUsersUpdated callback is triggered
-    
+
     debugPrint('[USERS_LIST] Manual refresh completed');
+  }
+
+  void _openChat(UserModel user) {
+    debugPrint('[USERS_LIST] Opening chat with ${user.name}');
+
+    // Navigate to chat view
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => ChatView(otherUser: user)));
   }
 
   void _initiateCall(UserModel user, bool isVideo) async {
@@ -243,8 +261,9 @@ class _UsersListViewState extends State<UsersListView> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info_outline, 
-                        size: 16, 
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
                         color: Colors.orange.shade700,
                       ),
                       const SizedBox(width: 8),
@@ -287,9 +306,7 @@ class _UsersListViewState extends State<UsersListView> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: isVideo 
-                ? const Color(0xFF667eea) 
-                : Colors.green,
+              backgroundColor: isVideo ? const Color(0xFF667eea) : Colors.green,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -307,8 +324,9 @@ class _UsersListViewState extends State<UsersListView> {
   }
 
   Future<void> _startCall(UserModel user, bool isVideo) async {
-    final channelName = 'channel_${user.id}_${DateTime.now().millisecondsSinceEpoch}';
-    
+    final channelName =
+        'channel_${user.id}_${DateTime.now().millisecondsSinceEpoch}';
+
     // Send call request via RTM
     final sent = await _rtmService.sendCallRequest(
       receiverId: user.id,
@@ -326,19 +344,13 @@ class _UsersListViewState extends State<UsersListView> {
     final routeName = isVideo ? '/video-call' : '/voice-call';
     Get.toNamed(
       routeName,
-      arguments: {
-        'user': user,
-        'channelName': channelName,
-      },
+      arguments: {'user': user, 'channelName': channelName},
     );
   }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -392,10 +404,7 @@ class _UsersListViewState extends State<UsersListView> {
         onPressed: _refreshOnlineUsers,
         backgroundColor: Colors.white,
         tooltip: 'Refresh online users',
-        child: const Icon(
-          Icons.refresh,
-          color: Color(0xFF667eea),
-        ),
+        child: const Icon(Icons.refresh, color: Color(0xFF667eea)),
       ),
       body: Container(
         width: double.infinity,
@@ -404,10 +413,7 @@ class _UsersListViewState extends State<UsersListView> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF667eea),
-              const Color(0xFF764ba2),
-            ],
+            colors: [const Color(0xFF667eea), const Color(0xFF764ba2)],
           ),
         ),
         child: SafeArea(
@@ -433,10 +439,7 @@ class _UsersListViewState extends State<UsersListView> {
                         SizedBox(height: 4),
                         Text(
                           'Start connecting with people',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
                         ),
                       ],
                     ),
@@ -488,57 +491,59 @@ class _UsersListViewState extends State<UsersListView> {
                   ],
                 ),
               ),
-              
+
               // Users List
               Expanded(
                 child: _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : _onlineUsers.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.people_outline,
-                                  size: 80,
-                                  color: Colors.white.withOpacity(0.5),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'No users online',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white.withOpacity(0.9),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Check back later or invite friends!',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white.withOpacity(0.7),
-                                  ),
-                                ),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.people_outline,
+                              size: 80,
+                              color: Colors.white.withOpacity(0.5),
                             ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadUsers,
-                            color: const Color(0xFF667eea),
-                            child: ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: _onlineUsers.length,
-                              itemBuilder: (context, index) {
-                                final user = _onlineUsers[index];
-                                return _buildUserCard(user);
-                              },
+                            const SizedBox(height: 16),
+                            Text(
+                              'No users online',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Check back later or invite friends!',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadUsers,
+                        color: const Color(0xFF667eea),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _onlineUsers.length,
+                          itemBuilder: (context, index) {
+                            final user = _onlineUsers[index];
+                            return _buildUserCard(user);
+                          },
+                        ),
+                      ),
               ),
             ],
           ),
@@ -549,16 +554,16 @@ class _UsersListViewState extends State<UsersListView> {
 
   Widget _buildUserCard(UserModel user) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -568,20 +573,20 @@ class _UsersListViewState extends State<UsersListView> {
           Stack(
             children: [
               CircleAvatar(
-                radius: 30,
+                radius: 26,
                 backgroundColor: const Color(0xFF667eea),
                 child: user.profilePic != null
                     ? ClipOval(
                         child: Image.network(
                           user.profilePic!,
-                          width: 60,
-                          height: 60,
+                          width: 52,
+                          height: 52,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Text(
                             user.name[0].toUpperCase(),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -591,7 +596,7 @@ class _UsersListViewState extends State<UsersListView> {
                         user.name[0].toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -601,8 +606,8 @@ class _UsersListViewState extends State<UsersListView> {
                   right: 0,
                   bottom: 0,
                   child: Container(
-                    width: 14,
-                    height: 14,
+                    width: 12,
+                    height: 12,
                     decoration: BoxDecoration(
                       color: Colors.green,
                       shape: BoxShape.circle,
@@ -612,42 +617,44 @@ class _UsersListViewState extends State<UsersListView> {
                 ),
             ],
           ),
-          
-          const SizedBox(width: 16),
-          
+
+          const SizedBox(width: 12),
+
           // User Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   user.name,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF2d3436),
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   children: [
                     Icon(
                       Icons.cake_outlined,
-                      size: 14,
+                      size: 13,
                       color: Colors.grey.shade600,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${user.age} years',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         color: Colors.grey.shade600,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Icon(
                       Icons.location_on_outlined,
-                      size: 14,
+                      size: 13,
                       color: Colors.grey.shade600,
                     ),
                     const SizedBox(width: 4),
@@ -655,7 +662,7 @@ class _UsersListViewState extends State<UsersListView> {
                       child: Text(
                         user.location,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           color: Colors.grey.shade600,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -669,51 +676,107 @@ class _UsersListViewState extends State<UsersListView> {
                     child: Text(
                       'Offline',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: Colors.grey.shade500,
                         fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
+                const SizedBox(height: 8),
+                // Call Buttons Row
+                Row(
+                  children: [
+                    // Chat Button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: user.isOnline ? () => _openChat(user) : null,
+                        icon: const Icon(Icons.chat_bubble_outline, size: 16),
+                        label: const Text(
+                          'Chat',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: user.isOnline
+                              ? const Color(0xFF667eea)
+                              : Colors.grey.shade300,
+                          foregroundColor: user.isOnline
+                              ? Colors.white
+                              : Colors.grey.shade600,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Voice Call Button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: user.isOnline
+                            ? () => _initiateCall(user, false)
+                            : null,
+                        icon: const Icon(Icons.phone, size: 16),
+                        label: const Text(
+                          'Voice',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: user.isOnline
+                              ? Colors.green
+                              : Colors.grey.shade300,
+                          foregroundColor: user.isOnline
+                              ? Colors.white
+                              : Colors.grey.shade600,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Video Call Button
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: user.isOnline
+                            ? () => _initiateCall(user, true)
+                            : null,
+                        icon: const Icon(Icons.videocam, size: 16),
+                        label: const Text(
+                          'Video',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: user.isOnline
+                              ? const Color(0xFF667eea)
+                              : Colors.grey.shade300,
+                          foregroundColor: user.isOnline
+                              ? Colors.white
+                              : Colors.grey.shade600,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ),
-          
-          // Call Buttons
-          Column(
-            children: [
-              // Voice Call Button
-              IconButton(
-                onPressed: user.isOnline 
-                  ? () => _initiateCall(user, false)
-                  : null,
-                icon: const Icon(Icons.phone),
-                color: Colors.green,
-                iconSize: 26,
-                style: IconButton.styleFrom(
-                  backgroundColor: user.isOnline
-                      ? Colors.green.shade50
-                      : Colors.grey.shade200,
-                  padding: const EdgeInsets.all(10),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Video Call Button
-              IconButton(
-                onPressed: user.isOnline
-                  ? () => _initiateCall(user, true)
-                  : null,
-                icon: const Icon(Icons.videocam),
-                color: const Color(0xFF667eea),
-                iconSize: 26,
-                style: IconButton.styleFrom(
-                  backgroundColor: user.isOnline
-                      ? const Color(0xFF667eea).withOpacity(0.1)
-                      : Colors.grey.shade200,
-                  padding: const EdgeInsets.all(10),
-                ),
-              ),
-            ],
           ),
         ],
       ),

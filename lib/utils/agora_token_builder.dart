@@ -7,20 +7,21 @@ import 'package:crypto/crypto.dart';
 /// Generates tokens for Agora Real-Time Communication
 /// Based on Agora's AccessToken2 algorithm for new projects
 class AgoraTokenBuilder {
-  static const String version = '007'; // Will be updated to support both formats
-  
+  static const String version =
+      '007'; // Will be updated to support both formats
+
   // Privilege types
   static const int kJoinChannel = 1;
   static const int kPublishAudioStream = 2;
   static const int kPublishVideoStream = 3;
   static const int kPublishDataStream = 4;
-  
+
   // Role types
   static const int rolePublisher = 1;
   static const int roleSubscriber = 2;
 
   /// Generate RTC Token
-  /// 
+  ///
   /// [appId] - Your Agora App ID
   /// [appCertificate] - Your Agora App Certificate
   /// [channelName] - Channel name (can be any string)
@@ -53,8 +54,10 @@ class AgoraTokenBuilder {
     int role = rolePublisher,
     int? privilegeExpiredTs,
   }) {
-    final expireTimestamp = privilegeExpiredTs ?? 
-        (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 86400; // Default 24 hours
+    final expireTimestamp =
+        privilegeExpiredTs ??
+        (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
+            86400; // Default 24 hours
 
     final message = _AccessToken(
       appId: appId,
@@ -64,7 +67,7 @@ class AgoraTokenBuilder {
     );
 
     message.addPrivilege(kJoinChannel, expireTimestamp);
-    
+
     if (role == rolePublisher) {
       message.addPrivilege(kPublishAudioStream, expireTimestamp);
       message.addPrivilege(kPublishVideoStream, expireTimestamp);
@@ -121,13 +124,13 @@ class _AccessToken {
 
   String _packContent() {
     final buffer = BytesBuilder();
-    
+
     // Pack salt
     buffer.add(_packUint32(salt));
-    
+
     // Pack ts
     buffer.add(_packUint32(ts));
-    
+
     // Pack privileges
     buffer.add(_packMapUint32(privileges));
 
@@ -136,16 +139,16 @@ class _AccessToken {
 
   String _packMessage() {
     final buffer = BytesBuilder();
-    
+
     // Pack signature
     buffer.add(_packString(base64.encode(signature)));
-    
+
     // Pack crc channel name
     buffer.add(_packUint32(crcChannelName));
-    
+
     // Pack crc uid
     buffer.add(_packUint32(crcUid));
-    
+
     // Pack message raw content
     buffer.add(_packString(messageRawContent));
 
@@ -161,21 +164,19 @@ class _AccessToken {
   ) {
     final key = utf8.encode(appCertificate);
     final content = utf8.encode('$appId$channelName$uid$message');
-    
+
     final hmac = Hmac(sha256, key);
     final digest = hmac.convert(content);
-    
+
     return Uint8List.fromList(digest.bytes);
   }
 
   Uint8List _packUint16(int value) {
-    return Uint8List(2)
-      ..buffer.asByteData().setUint16(0, value, Endian.little);
+    return Uint8List(2)..buffer.asByteData().setUint16(0, value, Endian.little);
   }
 
   Uint8List _packUint32(int value) {
-    return Uint8List(4)
-      ..buffer.asByteData().setUint32(0, value, Endian.little);
+    return Uint8List(4)..buffer.asByteData().setUint32(0, value, Endian.little);
   }
 
   Uint8List _packString(String value) {
@@ -189,12 +190,12 @@ class _AccessToken {
   Uint8List _packMapUint32(Map<int, int> map) {
     final buffer = BytesBuilder();
     buffer.add(_packUint16(map.length));
-    
+
     map.forEach((key, value) {
       buffer.add(_packUint16(key));
       buffer.add(_packUint32(value));
     });
-    
+
     return buffer.toBytes();
   }
 

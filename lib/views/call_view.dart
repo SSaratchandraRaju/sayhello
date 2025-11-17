@@ -38,7 +38,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     super.initState();
     // Add lifecycle observer to handle app state changes (for PIP)
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Delay heavy plugin/native initialization until after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initialize();
@@ -49,9 +49,10 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     _log('App lifecycle state changed to: $state');
-    
+
     // Handle PIP mode when app goes to background
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       // Only enter PIP if we're actually in a call
       if (_isCallConnected && _remoteUid != null) {
         _log('App paused/inactive with active call - entering PIP mode');
@@ -79,19 +80,19 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     // Initialize Agora engine and join the channel when the call screen is shown.
     try {
       await widget.agoraService.initialize();
-      
+
       // Setup callback for when all users leave
       widget.agoraService.onAllUsersLeft = () {
         _log('All remote users left, ending call automatically');
         _showRemoteUserLeftDialog();
       };
-      
+
       // Setup local video controller before joining
       _localController = VideoViewController(
         rtcEngine: widget.agoraService.engine,
         canvas: const VideoCanvas(uid: 0),
       );
-      
+
       await widget.agoraService.joinChannel(widget.channelName);
     } catch (e) {
       _log('Agora initialization/join failed: $e');
@@ -113,7 +114,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
             connection: RtcConnection(channelId: widget.channelName),
           );
         });
-  _log('Detected remote uid: $ruid');
+        _log('Detected remote uid: $ruid');
       }
     });
 
@@ -128,7 +129,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     setState(() {
       _isAudioEnabled = !_isAudioEnabled;
     });
-  _log('Audio ${_isAudioEnabled ? "enabled" : "muted"}');
+    _log('Audio ${_isAudioEnabled ? "enabled" : "muted"}');
   }
 
   void _toggleVideo() {
@@ -146,7 +147,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
 
   void _showRemoteUserLeftDialog() {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -169,7 +170,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
   Future<void> _endCall() async {
     _log('Ending call');
     if (!mounted) return;
-    
+
     try {
       await widget.agoraService.leaveChannel();
     } catch (e) {
@@ -181,9 +182,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     // Navigate back to home screen (not just pop)
     if (mounted) {
       // Use GetX to navigate back to home, clearing call screen from stack
-      Get.offAllNamed('/users', arguments: {
-        'userName': widget.userName,
-      });
+      Get.offAllNamed('/users', arguments: {'userName': widget.userName});
     }
   }
 
@@ -207,12 +206,12 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
         ],
       ),
     );
-    
+
     if (shouldLeave == true) {
       await _endCall();
       return false; // Prevent default back behavior since we handle it
     }
-    
+
     return false; // Don't pop if user cancelled
   }
 
@@ -227,17 +226,17 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
   void dispose() {
     // Remove lifecycle observer
     WidgetsBinding.instance.removeObserver(this);
-    
+
     // Clear the callback to avoid memory leaks
     widget.agoraService.onAllUsersLeft = null;
-    
+
     // Cancel all stream subscriptions first
     _remotePollTimer?.cancel();
     _remoteController = null;
     try {
       _localController?.dispose();
     } catch (_) {}
-    
+
     // Leave channel when widget is disposed (app killed or screen closed)
     // This will notify other users
     widget.agoraService.leaveChannel().catchError((e) {
@@ -292,7 +291,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
               else
                 _buildPipRemoteVideo(),
 
-              // Peer name
+              // Peer nameSara
               Positioned(
                 top: 20,
                 left: 20,
@@ -363,7 +362,10 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
                       heroTag: 'switchCameraButton',
                       onPressed: _switchCamera,
                       backgroundColor: Colors.white,
-                      child: const Icon(Icons.switch_camera, color: Colors.black),
+                      child: const Icon(
+                        Icons.switch_camera,
+                        color: Colors.black,
+                      ),
                     ),
                   ],
                 ),
@@ -391,11 +393,7 @@ class _CallViewState extends State<CallView> with WidgetsBindingObserver {
     return Container(
       color: Colors.grey.shade800,
       child: const Center(
-        child: Icon(
-          Icons.videocam_off,
-          color: Colors.white,
-          size: 100,
-        ),
+        child: Icon(Icons.videocam_off, color: Colors.white, size: 100),
       ),
     );
   }

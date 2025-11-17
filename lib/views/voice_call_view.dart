@@ -11,11 +11,8 @@ class VoiceCallView extends StatefulWidget {
   final UserModel user;
   final String channelName;
 
-  const VoiceCallView({
-    Key? key,
-    required this.user,
-    required this.channelName,
-  }) : super(key: key);
+  const VoiceCallView({Key? key, required this.user, required this.channelName})
+    : super(key: key);
 
   @override
   State<VoiceCallView> createState() => _VoiceCallViewState();
@@ -24,14 +21,14 @@ class VoiceCallView extends StatefulWidget {
 class _VoiceCallViewState extends State<VoiceCallView> {
   RtcEngine? _engine;
   final CreditsService _creditsService = CreditsService();
-  
+
   bool _isMuted = false;
   bool _isSpeakerOn = true;
   bool _isRemoteUserJoined = false;
-  
+
   int _callDuration = 0;
   Timer? _callTimer;
-  
+
   bool _isInitialized = false;
   bool _showLowCreditsWarning = false;
 
@@ -48,23 +45,27 @@ class _VoiceCallViewState extends State<VoiceCallView> {
     try {
       // Create Agora engine
       _engine = createAgoraRtcEngine();
-      
-      await _engine!.initialize(RtcEngineContext(
-        appId: AppConfig.agoraAppId,
-        channelProfile: ChannelProfileType.channelProfileCommunication,
-      ));
+
+      await _engine!.initialize(
+        RtcEngineContext(
+          appId: AppConfig.agoraAppId,
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+        ),
+      );
 
       // Register event handlers
       _engine!.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-            debugPrint('[AGORA] Successfully joined channel: ${connection.channelId}');
+            debugPrint(
+              '[AGORA] Successfully joined channel: ${connection.channelId}',
+            );
             setState(() => _isInitialized = true);
-            
+
             // Start call timer and credit deduction
             _startCallTimer();
             _creditsService.startCall(false); // false = voice call
-            
+
             // Listen for credit exhaustion
             _creditsService.onCreditsExhausted = _onCreditsExhausted;
           },
@@ -74,13 +75,20 @@ class _VoiceCallViewState extends State<VoiceCallView> {
               _isRemoteUserJoined = true;
             });
           },
-          onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-            debugPrint('[AGORA] Remote user left: $remoteUid, reason: $reason');
-            setState(() {
-              _isRemoteUserJoined = false;
-            });
-            _endCall(isRemoteUserLeft: true);
-          },
+          onUserOffline:
+              (
+                RtcConnection connection,
+                int remoteUid,
+                UserOfflineReasonType reason,
+              ) {
+                debugPrint(
+                  '[AGORA] Remote user left: $remoteUid, reason: $reason',
+                );
+                setState(() {
+                  _isRemoteUserJoined = false;
+                });
+                _endCall(isRemoteUserLeft: true);
+              },
           onError: (ErrorCodeType err, String msg) {
             debugPrint('[AGORA] Error: $err - $msg');
           },
@@ -90,7 +98,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
       // Enable audio
       await _engine!.enableAudio();
       await _engine!.setDefaultAudioRouteToSpeakerphone(true);
-      
+
       // Join channel
       await _engine!.joinChannel(
         token: '', // Testing Mode - no token needed
@@ -103,9 +111,8 @@ class _VoiceCallViewState extends State<VoiceCallView> {
           publishMicrophoneTrack: true,
         ),
       );
-      
+
       debugPrint('[AGORA] Joining channel: ${widget.channelName}');
-      
     } catch (e) {
       debugPrint('[AGORA] Error initializing: $e');
       _showError('Failed to initialize call: $e');
@@ -116,7 +123,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
   void _startCallTimer() {
     _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() => _callDuration++);
-      
+
       // Check for low credits warning (less than 100 credits = ~2.5 minutes)
       if (_creditsService.credits.value < 100 && !_showLowCreditsWarning) {
         _showLowCreditsWarning = true;
@@ -151,19 +158,22 @@ class _VoiceCallViewState extends State<VoiceCallView> {
     _callTimer?.cancel();
     _creditsService.stopCall();
     _creditsService.onCreditsExhausted = null;
-    
+
     if (_engine != null) {
       await _engine!.leaveChannel();
       await _engine!.release();
       _engine = null;
     }
-    
+
     if (mounted) {
-      Get.back(result: {
-        'duration': _callDuration,
-        'creditsUsed': _callDuration * (CreditsService.voiceCallRate / 60).round(),
-        'isRemoteUserLeft': isRemoteUserLeft,
-      });
+      Get.back(
+        result: {
+          'duration': _callDuration,
+          'creditsUsed':
+              _callDuration * (CreditsService.voiceCallRate / 60).round(),
+          'isRemoteUserLeft': isRemoteUserLeft,
+        },
+      );
     }
   }
 
@@ -230,7 +240,9 @@ class _VoiceCallViewState extends State<VoiceCallView> {
         final result = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Text('End Call?'),
             content: const Text('Are you sure you want to end this call?'),
             actions: [
@@ -262,10 +274,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.green.shade700,
-                Colors.green.shade900,
-              ],
+              colors: [Colors.green.shade700, Colors.green.shade900],
             ),
           ),
           child: SafeArea(
@@ -288,7 +297,8 @@ class _VoiceCallViewState extends State<VoiceCallView> {
                               title: const Text('End Call?'),
                               actions: [
                                 TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
                                   child: const Text('Cancel'),
                                 ),
                                 ElevatedButton(
@@ -346,7 +356,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
                     ],
                   ),
                 ),
-                
+
                 // User info and call status
                 Expanded(
                   child: Column(
@@ -375,9 +385,9 @@ class _VoiceCallViewState extends State<VoiceCallView> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // User name
                       Text(
                         widget.user.name,
@@ -387,20 +397,20 @@ class _VoiceCallViewState extends State<VoiceCallView> {
                           color: Colors.white,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Call status
                       Text(
-                        _isRemoteUserJoined 
-                          ? _formatDuration(_callDuration)
-                          : 'Calling...',
+                        _isRemoteUserJoined
+                            ? _formatDuration(_callDuration)
+                            : 'Calling...',
                         style: TextStyle(
                           fontSize: 18,
                           color: Colors.white.withOpacity(0.9),
                         ),
                       ),
-                      
+
                       if (!_isRemoteUserJoined && _isInitialized)
                         Padding(
                           padding: const EdgeInsets.only(top: 16),
@@ -418,7 +428,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
                     ],
                   ),
                 ),
-                
+
                 // Call controls
                 Padding(
                   padding: const EdgeInsets.all(32),
@@ -432,7 +442,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
                         onPressed: _toggleMute,
                         isActive: _isMuted,
                       ),
-                      
+
                       // End call button
                       GestureDetector(
                         onTap: _endCall,
@@ -450,7 +460,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
                           ),
                         ),
                       ),
-                      
+
                       // Speaker button
                       _buildControlButton(
                         icon: _isSpeakerOn ? Icons.volume_up : Icons.volume_off,
@@ -484,9 +494,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: isActive
-                  ? Colors.white
-                  : Colors.white.withOpacity(0.3),
+              color: isActive ? Colors.white : Colors.white.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -499,10 +507,7 @@ class _VoiceCallViewState extends State<VoiceCallView> {
         const SizedBox(height: 8),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
         ),
       ],
     );

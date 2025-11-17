@@ -10,13 +10,14 @@ class HomeView extends StatefulWidget {
   State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin {
+class _HomeViewState extends State<HomeView>
+    with SingleTickerProviderStateMixin {
   final _agora = AgoraService();
   final TextEditingController _channelController = TextEditingController();
   late AnimationController _animationController;
   Animation<double>? _fadeAnimation;
   Animation<Offset>? _slideAnimation;
-  
+
   String? _currentUserName;
   bool _isJoining = false;
 
@@ -27,16 +28,19 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
-    
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
     _animationController.forward();
   }
 
@@ -63,7 +67,9 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
         SnackBar(
           content: const Text('Please enter a channel name'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -93,7 +99,9 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
         SnackBar(
           content: Text('Failed to join: $e'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -103,7 +111,8 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
   }
 
   void _createQuickChannel() {
-    final quickChannel = 'room-${DateTime.now().millisecondsSinceEpoch % 10000}';
+    final quickChannel =
+        'room-${DateTime.now().millisecondsSinceEpoch % 10000}';
     _channelController.text = quickChannel;
     _joinChannel();
   }
@@ -129,7 +138,9 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
           child: FadeTransition(
             opacity: _fadeAnimation ?? AlwaysStoppedAnimation<double>(1.0),
             child: SlideTransition(
-              position: _slideAnimation ?? AlwaysStoppedAnimation<Offset>(Offset.zero),
+              position:
+                  _slideAnimation ??
+                  AlwaysStoppedAnimation<Offset>(Offset.zero),
               child: Column(
                 children: [
                   // Custom App Bar
@@ -149,7 +160,7 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                       ],
                     ),
                   ),
-                  
+
                   Expanded(
                     child: Center(
                       child: SingleChildScrollView(
@@ -177,7 +188,10 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(24),
                                 child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 10,
+                                    sigmaY: 10,
+                                  ),
                                   child: Padding(
                                     padding: const EdgeInsets.all(24.0),
                                     child: Row(
@@ -187,17 +201,23 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                           width: 60,
                                           height: 60,
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.25),
+                                            color: Colors.white.withOpacity(
+                                              0.25,
+                                            ),
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                              color: Colors.white.withOpacity(0.4),
+                                              color: Colors.white.withOpacity(
+                                                0.4,
+                                              ),
                                               width: 2,
                                             ),
                                           ),
                                           child: Center(
                                             child: Text(
-                                              (_currentUserName?.isNotEmpty ?? false)
-                                                  ? _currentUserName![0].toUpperCase()
+                                              (_currentUserName?.isNotEmpty ??
+                                                      false)
+                                                  ? _currentUserName![0]
+                                                        .toUpperCase()
                                                   : 'U',
                                               style: const TextStyle(
                                                 fontSize: 24,
@@ -211,7 +231,8 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                         // User Info
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 _currentUserName ?? 'User',
@@ -232,7 +253,9 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                                       shape: BoxShape.circle,
                                                       boxShadow: [
                                                         BoxShadow(
-                                                          color: Colors.greenAccent.withOpacity(0.5),
+                                                          color: Colors
+                                                              .greenAccent
+                                                              .withOpacity(0.5),
                                                           blurRadius: 8,
                                                           spreadRadius: 2,
                                                         ),
@@ -244,7 +267,8 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                                     'Online',
                                                     style: TextStyle(
                                                       fontSize: 14,
-                                                      color: Colors.white.withOpacity(0.85),
+                                                      color: Colors.white
+                                                          .withOpacity(0.85),
                                                     ),
                                                   ),
                                                 ],
@@ -258,9 +282,9 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 32),
-                            
+
                             // Channel Input Card
                             Container(
                               constraints: BoxConstraints(maxWidth: 450),
@@ -282,7 +306,10 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(24),
                                 child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 10,
+                                    sigmaY: 10,
+                                  ),
                                   child: Padding(
                                     padding: const EdgeInsets.all(32.0),
                                     child: Column(
@@ -302,18 +329,26 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             fontSize: 14,
-                                            color: Colors.white.withOpacity(0.8),
+                                            color: Colors.white.withOpacity(
+                                              0.8,
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(height: 32),
-                                        
+
                                         // Channel Input
                                         Container(
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(16),
+                                            color: Colors.white.withOpacity(
+                                              0.2,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                             border: Border.all(
-                                              color: Colors.white.withOpacity(0.3),
+                                              color: Colors.white.withOpacity(
+                                                0.3,
+                                              ),
                                               width: 1,
                                             ),
                                           ),
@@ -326,38 +361,50 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                             decoration: InputDecoration(
                                               hintText: 'Channel Name',
                                               hintStyle: TextStyle(
-                                                color: Colors.white.withOpacity(0.6),
+                                                color: Colors.white.withOpacity(
+                                                  0.6,
+                                                ),
                                               ),
                                               prefixIcon: Icon(
                                                 Icons.tag_rounded,
-                                                color: Colors.white.withOpacity(0.8),
+                                                color: Colors.white.withOpacity(
+                                                  0.8,
+                                                ),
                                               ),
                                               border: InputBorder.none,
-                                              contentPadding: const EdgeInsets.symmetric(
-                                                horizontal: 20,
-                                                vertical: 18,
-                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                    vertical: 18,
+                                                  ),
                                             ),
                                             onSubmitted: (_) => _joinChannel(),
                                           ),
                                         ),
-                                        
+
                                         const SizedBox(height: 20),
-                                        
+
                                         // Join Button
                                         SizedBox(
                                           width: double.infinity,
                                           height: 56,
                                           child: ElevatedButton(
-                                            onPressed: _isJoining ? null : _joinChannel,
+                                            onPressed: _isJoining
+                                                ? null
+                                                : _joinChannel,
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.white,
-                                              foregroundColor: const Color(0xFF667eea),
+                                              foregroundColor: const Color(
+                                                0xFF667eea,
+                                              ),
                                               elevation: 0,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(16),
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
                                               ),
-                                              disabledBackgroundColor: Colors.white.withOpacity(0.7),
+                                              disabledBackgroundColor: Colors
+                                                  .white
+                                                  .withOpacity(0.7),
                                             ),
                                             child: _isJoining
                                                 ? SizedBox(
@@ -365,21 +412,33 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                                     width: 24,
                                                     child: CircularProgressIndicator(
                                                       strokeWidth: 2.5,
-                                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                                        const Color(0xFF667eea),
-                                                      ),
+                                                      valueColor:
+                                                          AlwaysStoppedAnimation<
+                                                            Color
+                                                          >(
+                                                            const Color(
+                                                              0xFF667eea,
+                                                            ),
+                                                          ),
                                                     ),
                                                   )
                                                 : Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
                                                     children: const [
-                                                      Icon(Icons.video_call_rounded, size: 22),
+                                                      Icon(
+                                                        Icons
+                                                            .video_call_rounded,
+                                                        size: 22,
+                                                      ),
                                                       SizedBox(width: 8),
                                                       Text(
                                                         'Join Channel',
                                                         style: TextStyle(
                                                           fontSize: 17,
-                                                          fontWeight: FontWeight.w600,
+                                                          fontWeight:
+                                                              FontWeight.w600,
                                                           letterSpacing: 0.5,
                                                         ),
                                                       ),
@@ -387,24 +446,30 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                                   ),
                                           ),
                                         ),
-                                        
+
                                         const SizedBox(height: 16),
-                                        
+
                                         // Divider
                                         Row(
                                           children: [
                                             Expanded(
                                               child: Divider(
-                                                color: Colors.white.withOpacity(0.3),
+                                                color: Colors.white.withOpacity(
+                                                  0.3,
+                                                ),
                                                 thickness: 1,
                                               ),
                                             ),
                                             Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                  ),
                                               child: Text(
                                                 'OR',
                                                 style: TextStyle(
-                                                  color: Colors.white.withOpacity(0.7),
+                                                  color: Colors.white
+                                                      .withOpacity(0.7),
                                                   fontSize: 12,
                                                   fontWeight: FontWeight.w500,
                                                 ),
@@ -412,35 +477,46 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                             ),
                                             Expanded(
                                               child: Divider(
-                                                color: Colors.white.withOpacity(0.3),
+                                                color: Colors.white.withOpacity(
+                                                  0.3,
+                                                ),
                                                 thickness: 1,
                                               ),
                                             ),
                                           ],
                                         ),
-                                        
+
                                         const SizedBox(height: 16),
-                                        
+
                                         // Quick Join Button
                                         SizedBox(
                                           width: double.infinity,
                                           height: 56,
                                           child: OutlinedButton(
-                                            onPressed: _isJoining ? null : _createQuickChannel,
+                                            onPressed: _isJoining
+                                                ? null
+                                                : _createQuickChannel,
                                             style: OutlinedButton.styleFrom(
                                               foregroundColor: Colors.white,
                                               side: BorderSide(
-                                                color: Colors.white.withOpacity(0.5),
+                                                color: Colors.white.withOpacity(
+                                                  0.5,
+                                                ),
                                                 width: 1.5,
                                               ),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(16),
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
                                               ),
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: const [
-                                                Icon(Icons.bolt_rounded, size: 22),
+                                                Icon(
+                                                  Icons.bolt_rounded,
+                                                  size: 22,
+                                                ),
                                                 SizedBox(width: 8),
                                                 Text(
                                                   'Quick Join',
@@ -460,9 +536,9 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
                                 ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 24),
-                            
+
                             // Info Text
                             Text(
                               'Share the channel name with others to join',

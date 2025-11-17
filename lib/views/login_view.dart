@@ -8,7 +8,8 @@ class LoginView extends StatefulWidget {
   State<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMixin {
+class _LoginViewState extends State<LoginView>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _nameController = TextEditingController();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -22,16 +23,19 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic));
-    
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
     _animationController.forward();
   }
 
@@ -49,7 +53,9 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         SnackBar(
           content: const Text('Please enter your name'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
           backgroundColor: Colors.red.shade400,
         ),
       );
@@ -152,7 +158,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                     ),
                                   ),
                                   const SizedBox(height: 32),
-                                  
+
                                   // Title
                                   const Text(
                                     'Welcome',
@@ -164,7 +170,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                     ),
                                   ),
                                   const SizedBox(height: 12),
-                                  
+
                                   // Subtitle
                                   Text(
                                     'Enter your details to join the video call',
@@ -176,7 +182,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                     ),
                                   ),
                                   const SizedBox(height: 40),
-                                  
+
                                   // Name Input Field
                                   Container(
                                     decoration: BoxDecoration(
@@ -203,30 +209,38 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                           color: Colors.white.withOpacity(0.8),
                                         ),
                                         border: InputBorder.none,
-                                        contentPadding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 18,
-                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                              vertical: 18,
+                                            ),
                                       ),
                                       onSubmitted: (_) => _joinRoom(),
                                     ),
                                   ),
                                   const SizedBox(height: 28),
-                                  
+
                                   // Join Button
                                   SizedBox(
                                     width: double.infinity,
                                     height: 56,
                                     child: ElevatedButton(
-                                      onPressed: _isConnecting ? null : _joinRoom,
+                                      onPressed: _isConnecting
+                                          ? null
+                                          : _joinRoom,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.white,
-                                        foregroundColor: const Color(0xFF667eea),
+                                        foregroundColor: const Color(
+                                          0xFF667eea,
+                                        ),
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
                                         ),
-                                        disabledBackgroundColor: Colors.white.withOpacity(0.7),
+                                        disabledBackgroundColor: Colors.white
+                                            .withOpacity(0.7),
                                       ),
                                       child: _isConnecting
                                           ? SizedBox(
@@ -234,9 +248,10 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                               width: 24,
                                               child: CircularProgressIndicator(
                                                 strokeWidth: 2.5,
-                                                valueColor: AlwaysStoppedAnimation<Color>(
-                                                  const Color(0xFF667eea),
-                                                ),
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<
+                                                      Color
+                                                    >(const Color(0xFF667eea)),
                                               ),
                                             )
                                           : const Text(
@@ -256,7 +271,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
+
                       // Footer text
                       Text(
                         'Secure • Encrypted • Private',
@@ -277,4 +292,3 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     );
   }
 }
-

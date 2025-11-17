@@ -16,7 +16,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _locationController = TextEditingController();
-  
+
   String _selectedGender = 'Male';
   bool _isLoading = false;
 
@@ -26,35 +26,40 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
 
     final name = _nameController.text.trim();
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       // Generate a unique user ID
-      final userId = 'user_${name.toLowerCase().replaceAll(' ', '_')}_${Random().nextInt(9999)}';
-      
+      final userId =
+          'user_${name.toLowerCase().replaceAll(' ', '_')}_${Random().nextInt(9999)}';
+
       final user = UserModel(
         id: userId,
         name: name,
         age: int.tryParse(_ageController.text) ?? 25,
         gender: _selectedGender,
-        location: _locationController.text.trim().isEmpty 
-            ? 'Unknown' 
+        location: _locationController.text.trim().isEmpty
+            ? 'Unknown'
             : _locationController.text.trim(),
         isOnline: true,
         agoraUid: userId,
       );
-      
-      debugPrint('[PROFILE] Creating custom profile: ${user.name} (${user.id})');
-      
+
+      debugPrint(
+        '[PROFILE] Creating custom profile: ${user.name} (${user.id})',
+      );
+
       final onlineService = OnlineUsersService();
       await onlineService.setCurrentUser(user);
-      
-      debugPrint('[PROFILE] Profile created successfully, navigating to users list');
-      
+
+      debugPrint(
+        '[PROFILE] Profile created successfully, navigating to users list',
+      );
+
       // Navigate to users list
       Get.offAllNamed('/users-list');
-      
+
       Get.snackbar(
         'Success',
         'Profile created! You are now online as ${user.name}',
@@ -90,10 +95,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFF667eea).withOpacity(0.1),
-              Colors.white,
-            ],
+            colors: [const Color(0xFF667eea).withOpacity(0.1), Colors.white],
           ),
         ),
         child: SingleChildScrollView(
@@ -131,9 +133,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Name Field
                 TextFormField(
                   controller: _nameController,
@@ -152,9 +154,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF667eea),
+                        width: 2,
+                      ),
                     ),
-                    prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF667eea)),
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: Color(0xFF667eea),
+                    ),
                   ),
                   textCapitalization: TextCapitalization.words,
                   validator: (value) {
@@ -167,9 +175,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Age Field
                 TextFormField(
                   controller: _ageController,
@@ -188,9 +196,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF667eea),
+                        width: 2,
+                      ),
                     ),
-                    prefixIcon: const Icon(Icons.cake_outlined, color: Color(0xFF667eea)),
+                    prefixIcon: const Icon(
+                      Icons.cake_outlined,
+                      color: Color(0xFF667eea),
+                    ),
                   ),
                   keyboardType: TextInputType.number,
                   validator: (value) {
@@ -203,9 +217,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Gender Dropdown
                 DropdownButtonFormField<String>(
                   value: _selectedGender,
@@ -223,23 +237,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF667eea),
+                        width: 2,
+                      ),
                     ),
-                    prefixIcon: const Icon(Icons.wc_outlined, color: Color(0xFF667eea)),
+                    prefixIcon: const Icon(
+                      Icons.wc_outlined,
+                      color: Color(0xFF667eea),
+                    ),
                   ),
                   items: ['Male', 'Female', 'Other'].map((gender) {
-                    return DropdownMenuItem(
-                      value: gender,
-                      child: Text(gender),
-                    );
+                    return DropdownMenuItem(value: gender, child: Text(gender));
                   }).toList(),
                   onChanged: (value) {
                     setState(() => _selectedGender = value!);
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Location Field
                 TextFormField(
                   controller: _locationController,
@@ -258,15 +275,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF667eea), width: 2),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF667eea),
+                        width: 2,
+                      ),
                     ),
-                    prefixIcon: const Icon(Icons.location_on_outlined, color: Color(0xFF667eea)),
+                    prefixIcon: const Icon(
+                      Icons.location_on_outlined,
+                      color: Color(0xFF667eea),
+                    ),
                   ),
                   textCapitalization: TextCapitalization.words,
                 ),
-                
+
                 const SizedBox(height: 30),
-                
+
                 // Continue Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _saveProfile,
@@ -297,9 +320,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           ),
                         ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Or use predefined profile
                 TextButton(
                   onPressed: _isLoading
@@ -309,10 +332,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         },
                   child: const Text(
                     'Or select from predefined profiles',
-                    style: TextStyle(
-                      color: Color(0xFF667eea),
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Color(0xFF667eea), fontSize: 14),
                   ),
                 ),
               ],
@@ -322,7 +342,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ),
     );
   }
-  
+
   @override
   void dispose() {
     _nameController.dispose();

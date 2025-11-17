@@ -8,15 +8,15 @@ class CreditsService {
 
   // User credits
   final ValueNotifier<int> credits = ValueNotifier<int>(1000);
-  
+
   // Call rates per minute
-  static const int voiceCallRate = 40;  // 40 credits per minute
-  static const int videoCallRate = 80;  // 80 credits per minute
-  
+  static const int voiceCallRate = 40; // 40 credits per minute
+  static const int videoCallRate = 80; // 80 credits per minute
+
   // Timer for deducting credits during call
   Timer? _deductionTimer;
   bool _isInCall = false;
-  
+
   // Callback when credits run out
   Function()? onCreditsExhausted;
 
@@ -40,24 +40,24 @@ class CreditsService {
   // Start deducting credits during a call
   void startCall(bool isVideo) {
     if (_isInCall) return;
-    
+
     _isInCall = true;
-    
+
     final rate = isVideo ? videoCallRate : voiceCallRate;
-    
+
     debugPrint('[CREDITS] Starting ${isVideo ? "video" : "voice"} call');
     debugPrint('[CREDITS] Rate: $rate credits/minute');
     debugPrint('[CREDITS] Current balance: ${credits.value}');
-    
+
     // Deduct credits every second (rate/60 per second)
     final perSecondRate = rate / 60.0;
-    
+
     _deductionTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (credits.value > 0) {
         // Deduct fractional credits
         final newCredits = (credits.value - perSecondRate).floor();
         credits.value = newCredits.clamp(0, 999999);
-        
+
         if (credits.value <= 0) {
           debugPrint('[CREDITS] ⚠️  Credits exhausted!');
           stopCall();
@@ -74,10 +74,10 @@ class CreditsService {
   // Stop deducting credits
   void stopCall() {
     if (!_isInCall) return;
-    
+
     debugPrint('[CREDITS] Ending call');
     debugPrint('[CREDITS] Final balance: ${credits.value}');
-    
+
     _deductionTimer?.cancel();
     _deductionTimer = null;
     _isInCall = false;
@@ -87,14 +87,18 @@ class CreditsService {
   void deductCredits(int amount) {
     if (amount <= 0) return;
     credits.value = (credits.value - amount).clamp(0, 999999);
-    debugPrint('[CREDITS] Deducted $amount credits. New balance: ${credits.value}');
+    debugPrint(
+      '[CREDITS] Deducted $amount credits. New balance: ${credits.value}',
+    );
   }
 
   // Add credits (for purchases or rewards)
   void addCredits(int amount) {
     if (amount <= 0) return;
     credits.value = (credits.value + amount).clamp(0, 999999);
-    debugPrint('[CREDITS] Added $amount credits. New balance: ${credits.value}');
+    debugPrint(
+      '[CREDITS] Added $amount credits. New balance: ${credits.value}',
+    );
   }
 
   // Reset credits (for testing)
@@ -113,7 +117,7 @@ class CreditsService {
     final seconds = getRemainingCallTime(isVideo);
     final minutes = seconds ~/ 60;
     final remainingSeconds = seconds % 60;
-    
+
     if (minutes > 0) {
       return '$minutes min ${remainingSeconds}s';
     } else {

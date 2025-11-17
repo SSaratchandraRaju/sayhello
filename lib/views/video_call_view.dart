@@ -11,11 +11,8 @@ class VideoCallView extends StatefulWidget {
   final UserModel user;
   final String channelName;
 
-  const VideoCallView({
-    Key? key,
-    required this.user,
-    required this.channelName,
-  }) : super(key: key);
+  const VideoCallView({Key? key, required this.user, required this.channelName})
+    : super(key: key);
 
   @override
   State<VideoCallView> createState() => _VideoCallViewState();
@@ -24,7 +21,7 @@ class VideoCallView extends StatefulWidget {
 class _VideoCallViewState extends State<VideoCallView> {
   RtcEngine? _engine;
   final CreditsService _creditsService = CreditsService();
-  
+
   bool _isMuted = false;
   bool _isVideoEnabled = true;
   bool _isFrontCamera = true;
@@ -32,10 +29,10 @@ class _VideoCallViewState extends State<VideoCallView> {
   int _remoteUid = 0;
   bool _isVideoSwapped = false; // For swapping videos between main and PiP
   bool _isRemoteVideoEnabled = true; // Track remote user's video state
-  
+
   int _callDuration = 0;
   Timer? _callTimer;
-  
+
   bool _isInitialized = false;
   bool _showLowCreditsWarning = false;
 
@@ -60,23 +57,27 @@ class _VideoCallViewState extends State<VideoCallView> {
     try {
       // Create Agora engine
       _engine = createAgoraRtcEngine();
-      
-      await _engine!.initialize(RtcEngineContext(
-        appId: AppConfig.agoraAppId,
-        channelProfile: ChannelProfileType.channelProfileCommunication,
-      ));
+
+      await _engine!.initialize(
+        RtcEngineContext(
+          appId: AppConfig.agoraAppId,
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+        ),
+      );
 
       // Register event handlers
       _engine!.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-            debugPrint('[AGORA] Successfully joined channel: ${connection.channelId}');
+            debugPrint(
+              '[AGORA] Successfully joined channel: ${connection.channelId}',
+            );
             setState(() => _isInitialized = true);
-            
+
             // Start call timer and credit deduction
             _startCallTimer();
             _creditsService.startCall(true); // true = video call
-            
+
             // Listen for credit exhaustion
             _creditsService.onCreditsExhausted = _onCreditsExhausted;
           },
@@ -87,26 +88,45 @@ class _VideoCallViewState extends State<VideoCallView> {
               _remoteUid = remoteUid;
             });
           },
-          onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-            debugPrint('[AGORA] Remote user left: $remoteUid, reason: $reason');
-            setState(() {
-              _isRemoteUserJoined = false;
-              _remoteUid = 0;
-            });
-            _endCall(isRemoteUserLeft: true);
-          },
-          onRemoteVideoStateChanged: (RtcConnection connection, int remoteUid, RemoteVideoState state, RemoteVideoStateReason reason, int elapsed) {
-            debugPrint('[AGORA] Remote video state changed: uid=$remoteUid, state=$state, reason=$reason');
-            if (remoteUid == _remoteUid) {
-              setState(() {
-                // RemoteVideoState.stopped (0) or RemoteVideoState.frozen (1) = video off
-                // RemoteVideoState.decoding (2) or RemoteVideoState.starting (1) = video on
-                _isRemoteVideoEnabled = (state == RemoteVideoState.remoteVideoStateDecoding || 
-                                        state == RemoteVideoState.remoteVideoStateStarting);
-                debugPrint('[AGORA] Remote video enabled: $_isRemoteVideoEnabled');
-              });
-            }
-          },
+          onUserOffline:
+              (
+                RtcConnection connection,
+                int remoteUid,
+                UserOfflineReasonType reason,
+              ) {
+                debugPrint(
+                  '[AGORA] Remote user left: $remoteUid, reason: $reason',
+                );
+                setState(() {
+                  _isRemoteUserJoined = false;
+                  _remoteUid = 0;
+                });
+                _endCall(isRemoteUserLeft: true);
+              },
+          onRemoteVideoStateChanged:
+              (
+                RtcConnection connection,
+                int remoteUid,
+                RemoteVideoState state,
+                RemoteVideoStateReason reason,
+                int elapsed,
+              ) {
+                debugPrint(
+                  '[AGORA] Remote video state changed: uid=$remoteUid, state=$state, reason=$reason',
+                );
+                if (remoteUid == _remoteUid) {
+                  setState(() {
+                    // RemoteVideoState.stopped (0) or RemoteVideoState.frozen (1) = video off
+                    // RemoteVideoState.decoding (2) or RemoteVideoState.starting (1) = video on
+                    _isRemoteVideoEnabled =
+                        (state == RemoteVideoState.remoteVideoStateDecoding ||
+                        state == RemoteVideoState.remoteVideoStateStarting);
+                    debugPrint(
+                      '[AGORA] Remote video enabled: $_isRemoteVideoEnabled',
+                    );
+                  });
+                }
+              },
           onError: (ErrorCodeType err, String msg) {
             debugPrint('[AGORA] Error: $err - $msg');
           },
@@ -117,7 +137,7 @@ class _VideoCallViewState extends State<VideoCallView> {
       await _engine!.enableAudio();
       await _engine!.enableVideo();
       await _engine!.startPreview();
-      
+
       // Join channel
       await _engine!.joinChannel(
         token: '', // Testing Mode - no token needed
@@ -132,9 +152,8 @@ class _VideoCallViewState extends State<VideoCallView> {
           publishCameraTrack: true,
         ),
       );
-      
+
       debugPrint('[AGORA] Joining channel: ${widget.channelName}');
-      
     } catch (e) {
       debugPrint('[AGORA] Error initializing: $e');
       _showError('Failed to initialize call: $e');
@@ -145,7 +164,7 @@ class _VideoCallViewState extends State<VideoCallView> {
   void _startCallTimer() {
     _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() => _callDuration++);
-      
+
       // Check for low credits warning (less than 100 credits = ~1.25 minutes)
       if (_creditsService.credits.value < 100 && !_showLowCreditsWarning) {
         _showLowCreditsWarning = true;
@@ -179,26 +198,31 @@ class _VideoCallViewState extends State<VideoCallView> {
   Future<void> _switchCamera() async {
     setState(() => _isFrontCamera = !_isFrontCamera);
     await _engine?.switchCamera();
-    debugPrint('[AGORA] Camera switched to: ${_isFrontCamera ? 'front' : 'back'}');
+    debugPrint(
+      '[AGORA] Camera switched to: ${_isFrontCamera ? 'front' : 'back'}',
+    );
   }
 
   Future<void> _endCall({bool isRemoteUserLeft = false}) async {
     _callTimer?.cancel();
     _creditsService.stopCall();
     _creditsService.onCreditsExhausted = null;
-    
+
     if (_engine != null) {
       await _engine!.leaveChannel();
       await _engine!.release();
       _engine = null;
     }
-    
+
     if (mounted) {
-      Get.back(result: {
-        'duration': _callDuration,
-        'creditsUsed': _callDuration * (CreditsService.videoCallRate / 60).round(),
-        'isRemoteUserLeft': isRemoteUserLeft,
-      });
+      Get.back(
+        result: {
+          'duration': _callDuration,
+          'creditsUsed':
+              _callDuration * (CreditsService.videoCallRate / 60).round(),
+          'isRemoteUserLeft': isRemoteUserLeft,
+        },
+      );
     }
   }
 
@@ -264,7 +288,9 @@ class _VideoCallViewState extends State<VideoCallView> {
         final result = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: const Text('End Call?'),
             content: const Text('Are you sure you want to end this call?'),
             actions: [
@@ -299,68 +325,72 @@ class _VideoCallViewState extends State<VideoCallView> {
                 SizedBox.expand(
                   child: _isVideoSwapped
                       ? // Show local video in main view when swapped
-                      (_isVideoEnabled
-                          ? AgoraVideoView(
-                              controller: VideoViewController(
-                                rtcEngine: _engine!,
-                                canvas: const VideoCanvas(uid: 0),
-                              ),
-                            )
-                          : Container(
-                              color: Colors.black,
-                              child: const Center(
-                                child: Icon(
-                                  Icons.videocam_off,
-                                  size: 80,
-                                  color: Colors.white54,
+                        (_isVideoEnabled
+                            ? AgoraVideoView(
+                                controller: VideoViewController(
+                                  rtcEngine: _engine!,
+                                  canvas: const VideoCanvas(uid: 0),
                                 ),
-                              ),
-                            ))
+                              )
+                            : Container(
+                                color: Colors.black,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.videocam_off,
+                                    size: 80,
+                                    color: Colors.white54,
+                                  ),
+                                ),
+                              ))
                       : // Show remote video in main view when not swapped
-                      (_isRemoteVideoEnabled
-                          ? AgoraVideoView(
-                              controller: VideoViewController.remote(
-                                rtcEngine: _engine!,
-                                canvas: VideoCanvas(uid: _remoteUid),
-                                connection: RtcConnection(channelId: widget.channelName),
-                              ),
-                            )
-                          : // Remote video is disabled - show placeholder
-                          Container(
-                              color: Colors.black,
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: const Color(0xFF667eea).withOpacity(0.3),
-                                        border: Border.all(
-                                          color: const Color(0xFF667eea),
-                                          width: 3,
+                        (_isRemoteVideoEnabled
+                            ? AgoraVideoView(
+                                controller: VideoViewController.remote(
+                                  rtcEngine: _engine!,
+                                  canvas: VideoCanvas(uid: _remoteUid),
+                                  connection: RtcConnection(
+                                    channelId: widget.channelName,
+                                  ),
+                                ),
+                              )
+                            : // Remote video is disabled - show placeholder
+                              Container(
+                                color: Colors.black,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        width: 120,
+                                        height: 120,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: const Color(
+                                            0xFF667eea,
+                                          ).withOpacity(0.3),
+                                          border: Border.all(
+                                            color: const Color(0xFF667eea),
+                                            width: 3,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.videocam_off,
+                                          size: 60,
+                                          color: Colors.white70,
                                         ),
                                       ),
-                                      child: const Icon(
-                                        Icons.videocam_off,
-                                        size: 60,
-                                        color: Colors.white70,
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'Camera is off',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      'Camera is off',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            )),
+                              )),
                 )
               else
                 // Waiting for remote user
@@ -404,10 +434,7 @@ class _VideoCallViewState extends State<VideoCallView> {
                         const SizedBox(height: 8),
                         const Text(
                           'Calling...',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white70,
-                          ),
+                          style: TextStyle(fontSize: 16, color: Colors.white70),
                         ),
                         const SizedBox(height: 24),
                         const SizedBox(
@@ -415,7 +442,9 @@ class _VideoCallViewState extends State<VideoCallView> {
                           height: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white70,
+                            ),
                           ),
                         ),
                       ],
@@ -455,38 +484,44 @@ class _VideoCallViewState extends State<VideoCallView> {
                               color: Colors.black,
                               child: _isVideoSwapped
                                   ? // Show remote video in PiP when swapped
-                                  (_isRemoteVideoEnabled
-                                      ? AgoraVideoView(
-                                          controller: VideoViewController.remote(
-                                            rtcEngine: _engine!,
-                                            canvas: VideoCanvas(uid: _remoteUid),
-                                            connection: RtcConnection(channelId: widget.channelName),
-                                          ),
-                                        )
-                                      : const Center(
-                                          child: Icon(
-                                            Icons.videocam_off,
-                                            size: 40,
-                                            color: Colors.white54,
-                                          ),
-                                        ))
+                                    (_isRemoteVideoEnabled
+                                        ? AgoraVideoView(
+                                            controller:
+                                                VideoViewController.remote(
+                                                  rtcEngine: _engine!,
+                                                  canvas: VideoCanvas(
+                                                    uid: _remoteUid,
+                                                  ),
+                                                  connection: RtcConnection(
+                                                    channelId:
+                                                        widget.channelName,
+                                                  ),
+                                                ),
+                                          )
+                                        : const Center(
+                                            child: Icon(
+                                              Icons.videocam_off,
+                                              size: 40,
+                                              color: Colors.white54,
+                                            ),
+                                          ))
                                   : // Show local video in PiP when not swapped
-                                  (_isVideoEnabled
-                                      ? AgoraVideoView(
-                                          controller: VideoViewController(
-                                            rtcEngine: _engine!,
-                                            canvas: const VideoCanvas(uid: 0),
-                                          ),
-                                        )
-                                      : const Center(
-                                          child: Icon(
-                                            Icons.videocam_off,
-                                            size: 40,
-                                            color: Colors.white54,
-                                          ),
-                                        )),
+                                    (_isVideoEnabled
+                                        ? AgoraVideoView(
+                                            controller: VideoViewController(
+                                              rtcEngine: _engine!,
+                                              canvas: const VideoCanvas(uid: 0),
+                                            ),
+                                          )
+                                        : const Center(
+                                            child: Icon(
+                                              Icons.videocam_off,
+                                              size: 40,
+                                              color: Colors.white54,
+                                            ),
+                                          )),
                             ),
-                            
+
                             // Gradient overlay at bottom for better text visibility
                             Positioned(
                               bottom: 0,
@@ -506,7 +541,7 @@ class _VideoCallViewState extends State<VideoCallView> {
                                 ),
                               ),
                             ),
-                            
+
                             // Label at bottom indicating who's in PiP
                             Positioned(
                               bottom: 6,
@@ -530,7 +565,7 @@ class _VideoCallViewState extends State<VideoCallView> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            
+
                             // Tap to swap indicator
                             Positioned(
                               top: 6,
@@ -571,133 +606,135 @@ class _VideoCallViewState extends State<VideoCallView> {
                       stops: const [0.0, 0.2, 0.7, 1.0],
                     ),
                   ),
-                    child: SafeArea(
-                      child: Column(
-                        children: [
-                          // Top bar
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // User name and call duration
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      widget.user.name,
-                                      style: const TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _isRemoteUserJoined
-                                          ? _formatDuration(_callDuration)
-                                          : 'Connecting...',
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                // Credits display
-                                ValueListenableBuilder<int>(
-                                  valueListenable: _creditsService.credits,
-                                  builder: (context, credits, _) {
-                                    return Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: credits < 100
-                                            ? Colors.red.shade400
-                                            : Colors.white.withOpacity(0.3),
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.monetization_on,
-                                            color: Colors.white,
-                                            size: 16,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            credits.toString(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          
-                          const Spacer(),
-                          
-                          // Bottom controls
-                          Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                // Mute button
-                                _buildControlButton(
-                                  icon: _isMuted ? Icons.mic_off : Icons.mic,
-                                  onPressed: _toggleMute,
-                                  isActive: _isMuted,
-                                ),
-                                
-                                // Video toggle button
-                                _buildControlButton(
-                                  icon: _isVideoEnabled ? Icons.videocam : Icons.videocam_off,
-                                  onPressed: _toggleVideo,
-                                  isActive: !_isVideoEnabled,
-                                ),
-                                
-                                // End call button
-                                GestureDetector(
-                                  onTap: _endCall,
-                                  child: Container(
-                                    width: 70,
-                                    height: 70,
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.call_end,
+                  child: SafeArea(
+                    child: Column(
+                      children: [
+                        // Top bar
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // User name and call duration
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.user.name,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
                                       color: Colors.white,
-                                      size: 32,
                                     ),
                                   ),
-                                ),
-                                
-                                // Switch camera button
-                                _buildControlButton(
-                                  icon: Icons.flip_camera_ios,
-                                  onPressed: _switchCamera,
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _isRemoteUserJoined
+                                        ? _formatDuration(_callDuration)
+                                        : 'Connecting...',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Credits display
+                              ValueListenableBuilder<int>(
+                                valueListenable: _creditsService.credits,
+                                builder: (context, credits, _) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: credits < 100
+                                          ? Colors.red.shade400
+                                          : Colors.white.withOpacity(0.3),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.monetization_on,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          credits.toString(),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+
+                        const Spacer(),
+
+                        // Bottom controls
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              // Mute button
+                              _buildControlButton(
+                                icon: _isMuted ? Icons.mic_off : Icons.mic,
+                                onPressed: _toggleMute,
+                                isActive: _isMuted,
+                              ),
+
+                              // Video toggle button
+                              _buildControlButton(
+                                icon: _isVideoEnabled
+                                    ? Icons.videocam
+                                    : Icons.videocam_off,
+                                onPressed: _toggleVideo,
+                                isActive: !_isVideoEnabled,
+                              ),
+
+                              // End call button
+                              GestureDetector(
+                                onTap: _endCall,
+                                child: Container(
+                                  width: 70,
+                                  height: 70,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.call_end,
+                                    color: Colors.white,
+                                    size: 32,
+                                  ),
+                                ),
+                              ),
+
+                              // Switch camera button
+                              _buildControlButton(
+                                icon: Icons.flip_camera_ios,
+                                onPressed: _switchCamera,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              ),
             ],
           ),
         ),
@@ -716,9 +753,7 @@ class _VideoCallViewState extends State<VideoCallView> {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: isActive
-              ? Colors.white
-              : Colors.white.withOpacity(0.3),
+          color: isActive ? Colors.white : Colors.white.withOpacity(0.3),
           shape: BoxShape.circle,
         ),
         child: Icon(

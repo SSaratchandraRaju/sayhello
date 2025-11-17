@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:agora_rtm/agora_rtm.dart';
 import '../config/app_config.dart';
 import '../models/user_model.dart';
 
 /// Production-ready Agora RTM service for peer-to-peer call signaling
-/// 
+///
 /// Uses Agora RTM SDK v2.2.6 for:
 /// - Real-time call notifications
 /// - Online presence tracking
 /// - Peer-to-peer messaging
-/// 
+///
 /// Handles:
 /// - Call lifecycle (invite, accept, decline, cancel)
 /// - Connection management
@@ -25,22 +26,37 @@ class AgoraRtmService {
   RtmClient? _rtmClient;
   String? _currentUserId;
   String? _currentUserName;
-  
+
   // ===== MESSAGE CALLBACKS =====
   /// Called when an incoming call request is received
   Function(Map<String, dynamic> callData)? onIncomingCall;
-  
+
   /// Called when the caller accepts the call
   Function(Map<String, dynamic> responseData)? onCallAccepted;
-  
+
   /// Called when the caller declines the call
   Function(Map<String, dynamic> responseData)? onCallDeclined;
-  
+
   /// Called when the caller cancels the call before it's answered
   Function(Map<String, dynamic> responseData)? onCallCancelled;
 
   /// Called when online users set is updated
   Function(Set<String> onlineUserIds)? onOnlineUsersUpdated;
+
+  /// Called when a chat message is received
+  Function(Map<String, dynamic> messageData)? onChatMessage;
+
+  /// Called when a typing indicator is received
+  Function(Map<String, dynamic> typingData)? onTypingIndicator;
+
+  /// Called when a read receipt is received
+  Function(Map<String, dynamic> receiptData)? onReadReceipt;
+
+  /// Called when a message is deleted
+  Function(Map<String, dynamic> deletionData)? onMessageDeleted;
+
+  /// Called when a message is edited
+  Function(Map<String, dynamic> editData)? onMessageEdited;
 
   // ===== STATE =====
   bool _isInitialized = false;
@@ -50,7 +66,7 @@ class AgoraRtmService {
   Set<String> get onlineUsers => Set.from(_onlineUserIds);
 
   // ===== INITIALIZATION =====
-  
+
   /// Initialize RTM client
   Future<void> initialize(UserModel user) async {
     if (_isInitialized) {
@@ -67,58 +83,64 @@ class AgoraRtmService {
         _rtmClient = result.$2;
         _currentUserId = user.id;
         _currentUserName = user.name;
-        
+
         if (_rtmClient != null) {
           debugPrint('[RTM] ✅ Client created using RTM() wrapper');
-          
+
           // Setup event listeners
           _setupEventListeners();
-          
+
           // Login - RTM 2.x may use different login pattern
           try {
             debugPrint('[RTM] 🔐 Attempting login...');
             final loginResult = await _rtmClient!.login('');
-            
+
             // Check if login succeeded - loginResult might be a tuple or status object
             debugPrint('[RTM] Login result type: ${loginResult.runtimeType}');
             debugPrint('[RTM] Login result: $loginResult');
-            
+
             // Try to extract status from tuple
             try {
               final status = loginResult.$1;
               debugPrint('[RTM] Login status.error: ${status.error}');
               debugPrint('[RTM] Login status.reason: ${status.reason}');
-              
+
               if (!status.error) {
                 debugPrint('[RTM] ✅ Login successful');
-                
+
                 // Subscribe to online_users
                 await _subscribeToOnlineUsers();
-                
+
                 _isInitialized = true;
                 debugPrint('[RTM] ✨ Initialization complete');
                 return;
               } else {
                 debugPrint('[RTM] ❌ Login failed: ${status.reason}');
-                
+
                 // Check for specific error
-                if (status.reason.contains('not enabled') || 
+                if (status.reason.contains('not enabled') ||
                     status.reason.contains('stopped')) {
-                  debugPrint('[RTM] ⚠️  SOLUTION: Enable RTM service in Agora Console');
+                  debugPrint(
+                    '[RTM] ⚠️  SOLUTION: Enable RTM service in Agora Console',
+                  );
                   debugPrint('[RTM] 1. Go to https://console.agora.io/');
                   debugPrint('[RTM] 2. Find your project');
-                  debugPrint('[RTM] 3. Enable RTM (Real-Time Messaging) service');
+                  debugPrint(
+                    '[RTM] 3. Enable RTM (Real-Time Messaging) service',
+                  );
                   debugPrint('[RTM] 4. Save and restart app');
                 }
               }
             } catch (e) {
               // Maybe login doesn't return error field, try alternative check
               debugPrint('[RTM] ⚠️  Cannot parse login status: $e');
-              debugPrint('[RTM] ⚠️  Assuming login succeeded and continuing...');
-              
+              debugPrint(
+                '[RTM] ⚠️  Assuming login succeeded and continuing...',
+              );
+
               // Try subscribing anyway
               await _subscribeToOnlineUsers();
-              
+
               _isInitialized = true;
               debugPrint('[RTM] ✨ Initialization complete (assumed success)');
               return;
@@ -131,9 +153,10 @@ class AgoraRtmService {
         debugPrint('[RTM] ⚠️  RTM() wrapper failed: $e');
       }
 
-      debugPrint('[RTM] ❌ Initialization failed - RTM 2.x API may have changed');
+      debugPrint(
+        '[RTM] ❌ Initialization failed - RTM 2.x API may have changed',
+      );
       debugPrint('[RTM] Check pub.dev agora_rtm 2.2.6 documentation');
-
     } catch (e, stack) {
       debugPrint('[RTM] ❌ Initialization failed: $e');
       debugPrint('[RTM] Stack: $stack');
@@ -185,24 +208,28 @@ class AgoraRtmService {
       final status = result.$1;
       if (!status.error) {
         debugPrint('[RTM] ✅ Subscribed to $channelName');
-        
+
         // CRITICAL: Set presence state to notify other users
         try {
-          await _rtmClient!.getPresence().setState(
-            channelName,
-            RtmChannelType.stream,
-            {'status': 'online', 'userId': _currentUserId!, 'timestamp': DateTime.now().millisecondsSinceEpoch.toString()},
-          );
+          await _rtmClient!
+              .getPresence()
+              .setState(channelName, RtmChannelType.stream, {
+                'status': 'online',
+                'userId': _currentUserId!,
+                'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+              });
           debugPrint('[RTM] ✅ Presence state set for $_currentUserId');
         } catch (e) {
           debugPrint('[RTM] ⚠️  setState failed: $e');
         }
-        
+
         // In Testing Mode, whoNow() and getOnlineUsers() don't work reliably
         // We rely ONLY on presence events (snapshot, remoteJoin, remoteLeave)
         // which ARE working correctly
-        debugPrint('[RTM] ✅ Relying on presence events for online users (Testing Mode)');
-        
+        debugPrint(
+          '[RTM] ✅ Relying on presence events for online users (Testing Mode)',
+        );
+
         // Notify with current state (initially empty, will be updated by presence events)
         onOnlineUsersUpdated?.call(_onlineUserIds);
       } else {
@@ -221,16 +248,16 @@ class AgoraRtmService {
       debugPrint('[RTM] ❌ Cannot refresh - not initialized');
       return;
     }
-    
+
     debugPrint('[RTM] 🔄 Manual refresh requested...');
-    
+
     // Try to get fresh online users from RTM presence
     try {
       final result = await _rtmClient!.getPresence().getOnlineUsers(
         'online_users',
         RtmChannelType.stream,
       );
-      
+
       final status = result.$1;
       if (!status.error) {
         final response = result.$2;
@@ -242,24 +269,30 @@ class AgoraRtmService {
               freshUsers.add(userId);
             }
           }
-          
+
           // Update with fresh data
           _onlineUserIds.clear();
           _onlineUserIds.addAll(freshUsers);
-          
-          debugPrint('[RTM] ✅ Refresh success: ${_onlineUserIds.length} users online: ${_onlineUserIds.toList()}');
+
+          debugPrint(
+            '[RTM] ✅ Refresh success: ${_onlineUserIds.length} users online: ${_onlineUserIds.toList()}',
+          );
           onOnlineUsersUpdated?.call(_onlineUserIds);
           return;
         }
       } else {
-        debugPrint('[RTM] ⚠️ getOnlineUsers failed: ${status.reason} (Testing Mode limitation)');
+        debugPrint(
+          '[RTM] ⚠️ getOnlineUsers failed: ${status.reason} (Testing Mode limitation)',
+        );
       }
     } catch (e) {
       debugPrint('[RTM] ⚠️ getOnlineUsers error: $e (Testing Mode limitation)');
     }
-    
+
     // Fallback: notify with current cached state
-    debugPrint('[RTM] 🔄 Fallback: notifying with cached state: ${_onlineUserIds.length} users');
+    debugPrint(
+      '[RTM] 🔄 Fallback: notifying with cached state: ${_onlineUserIds.length} users',
+    );
     onOnlineUsersUpdated?.call(_onlineUserIds);
   }
 
@@ -269,7 +302,7 @@ class AgoraRtmService {
   void _handleIncomingMessage(dynamic event) {
     try {
       debugPrint('[RTM] � Message event type: ${event.runtimeType}');
-      
+
       // Try to extract message - API varies
       dynamic message;
       try {
@@ -286,7 +319,8 @@ class AgoraRtmService {
       if (message is String) {
         messageStr = message;
       } else if (message is Uint8List) {
-        messageStr = String.fromCharCodes(message);
+        // Use UTF-8 decoding to properly handle emojis and special characters
+        messageStr = utf8.decode(message);
       } else {
         debugPrint('[RTM] ⚠️  Unknown message type: ${message.runtimeType}');
         return;
@@ -294,12 +328,14 @@ class AgoraRtmService {
 
       final messageData = jsonDecode(messageStr) as Map<String, dynamic>;
       final messageType = messageData['type'] as String?;
-      
+
       debugPrint('[RTM] 📬 Message type: $messageType');
 
       switch (messageType) {
         case 'call_request':
-          debugPrint('[RTM] 📞 Incoming call from ${messageData['callerName']}');
+          debugPrint(
+            '[RTM] 📞 Incoming call from ${messageData['callerName']}',
+          );
           onIncomingCall?.call(messageData);
           break;
 
@@ -318,6 +354,35 @@ class AgoraRtmService {
           onCallCancelled?.call(messageData);
           break;
 
+        case 'chat_message':
+          debugPrint('[RTM] 💬 Chat message from ${messageData['senderName']}');
+          onChatMessage?.call(messageData);
+          break;
+
+        case 'typing_indicator':
+          debugPrint(
+            '[RTM] ⌨️  Typing indicator from ${messageData['senderId']}',
+          );
+          onTypingIndicator?.call(messageData);
+          break;
+
+        case 'read_receipt':
+          debugPrint('[RTM] ✓✓ Read receipt from ${messageData['senderId']}');
+          onReadReceipt?.call(messageData);
+          break;
+
+        case 'message_deleted':
+          debugPrint(
+            '[RTM] 🗑️  Message deletion from ${messageData['senderId']}',
+          );
+          onMessageDeleted?.call(messageData);
+          break;
+
+        case 'message_edited':
+          debugPrint('[RTM] ✏️  Message edit from ${messageData['senderId']}');
+          onMessageEdited?.call(messageData);
+          break;
+
         default:
           debugPrint('[RTM] ⚠️  Unknown message type: $messageType');
       }
@@ -330,7 +395,7 @@ class AgoraRtmService {
   void _handlePresenceEvent(dynamic event) {
     try {
       debugPrint('[RTM] 👥 Presence event type: ${event.runtimeType}');
-      
+
       // Extract channel name
       String? channelName;
       try {
@@ -338,29 +403,33 @@ class AgoraRtmService {
       } catch (e) {
         debugPrint('[RTM] ⚠️  Cannot access channelName: $e');
       }
-      
+
       if (channelName != 'online_users') return;
 
       // Extract event type and user
       try {
         final eventType = event.type;
         debugPrint('[RTM] Event type value: $eventType');
-        
+
         // Handle different event types
         if (eventType.toString().contains('snapshot')) {
           // Snapshot event - contains all current online users
           try {
             final snapshot = event.snapshot;
-            debugPrint('[RTM] 📊 Snapshot raw data: $snapshot (type: ${snapshot.runtimeType})');
-            
+            debugPrint(
+              '[RTM] 📊 Snapshot raw data: $snapshot (type: ${snapshot.runtimeType})',
+            );
+
             if (snapshot != null) {
               final Set<String> snapshotUsers = {};
-              
+
               // Try to access userStateList from SnapshotInfo object
               try {
                 final userStateList = snapshot.userStateList;
-                debugPrint('[RTM] 📊 Snapshot userStateList: ${userStateList?.length ?? 0} users');
-                
+                debugPrint(
+                  '[RTM] 📊 Snapshot userStateList: ${userStateList?.length ?? 0} users',
+                );
+
                 if (userStateList != null && userStateList.isNotEmpty) {
                   for (var userState in userStateList) {
                     try {
@@ -377,12 +446,14 @@ class AgoraRtmService {
               } catch (e) {
                 debugPrint('[RTM] ⚠️ Cannot access userStateList: $e');
               }
-              
+
               // Replace the entire set with snapshot data (this is the source of truth)
               _onlineUserIds.clear();
               _onlineUserIds.addAll(snapshotUsers);
-              
-              debugPrint('[RTM] 📊 Snapshot processed: ${_onlineUserIds.length} users online: ${_onlineUserIds.toList()}');
+
+              debugPrint(
+                '[RTM] 📊 Snapshot processed: ${_onlineUserIds.length} users online: ${_onlineUserIds.toList()}',
+              );
               onOnlineUsersUpdated?.call(_onlineUserIds);
             } else {
               debugPrint('[RTM] ⚠️ Snapshot is null');
@@ -396,20 +467,24 @@ class AgoraRtmService {
             final userId = event.publisher ?? event.userId;
             if (userId != null && userId != _currentUserId) {
               final wasAdded = _onlineUserIds.add(userId);
-              debugPrint('[RTM] ✅ User joined: $userId (new: $wasAdded, total: ${_onlineUserIds.length})');
+              debugPrint(
+                '[RTM] ✅ User joined: $userId (new: $wasAdded, total: ${_onlineUserIds.length})',
+              );
               onOnlineUsersUpdated?.call(_onlineUserIds);
             }
           } catch (e) {
             debugPrint('[RTM] ❌ Cannot parse join event: $e');
           }
-        } else if (eventType.toString().contains('remoteLeave') || 
-                   eventType.toString().contains('remoteTimeout')) {
+        } else if (eventType.toString().contains('remoteLeave') ||
+            eventType.toString().contains('remoteTimeout')) {
           // User left
           try {
             final userId = event.publisher ?? event.userId;
             if (userId != null) {
               final wasRemoved = _onlineUserIds.remove(userId);
-              debugPrint('[RTM] ❌ User left: $userId (removed: $wasRemoved, remaining: ${_onlineUserIds.length})');
+              debugPrint(
+                '[RTM] ❌ User left: $userId (removed: $wasRemoved, remaining: ${_onlineUserIds.length})',
+              );
               onOnlineUsersUpdated?.call(_onlineUserIds);
             }
           } catch (e) {
@@ -469,7 +544,6 @@ class AgoraRtmService {
 
       debugPrint('[RTM] ✅ Call request sent successfully');
       return true;
-
     } catch (e) {
       debugPrint('[RTM] ❌ Error sending call request: $e');
       return false;
@@ -506,7 +580,6 @@ class AgoraRtmService {
 
       final status = result.$1;
       return !status.error;
-
     } catch (e) {
       debugPrint('[RTM] ❌ Error sending call accepted: $e');
       return false;
@@ -539,7 +612,6 @@ class AgoraRtmService {
 
       final status = result.$1;
       return !status.error;
-
     } catch (e) {
       debugPrint('[RTM] ❌ Error sending call declined: $e');
       return false;
@@ -572,7 +644,6 @@ class AgoraRtmService {
 
       final status = result.$1;
       return !status.error;
-
     } catch (e) {
       debugPrint('[RTM] ❌ Error sending call cancelled: $e');
       return false;
@@ -582,6 +653,201 @@ class AgoraRtmService {
   /// Check if a user is online
   bool isUserOnline(String userId) {
     return _onlineUserIds.contains(userId);
+  }
+
+  // ===== CHAT MESSAGING METHODS =====
+
+  /// Send a text chat message to another user
+  Future<bool> sendChatMessage({
+    required String receiverId,
+    required String message,
+    Map<String, dynamic>? metadata,
+  }) async {
+    if (_rtmClient == null || !_isInitialized) {
+      debugPrint('[RTM] ❌ Not initialized');
+      return false;
+    }
+
+    if (message.trim().isEmpty) {
+      debugPrint('[RTM] ❌ Cannot send empty message');
+      return false;
+    }
+
+    try {
+      final messageData = {
+        'type': 'chat_message',
+        'senderId': _currentUserId,
+        'senderName': _currentUserName ?? 'Unknown',
+        'receiverId': receiverId,
+        'message': message,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+        'messageId':
+            '${_currentUserId}_${DateTime.now().millisecondsSinceEpoch}',
+        if (metadata != null) 'metadata': metadata,
+      };
+
+      final messageJson = jsonEncode(messageData);
+
+      debugPrint(
+        '[RTM] 📤 Sending chat message to $receiverId: ${message.substring(0, message.length > 50 ? 50 : message.length)}...',
+      );
+
+      final result = await _rtmClient!.publish(
+        receiverId,
+        messageJson,
+        channelType: RtmChannelType.user,
+      );
+
+      final status = result.$1;
+      if (status.error) {
+        debugPrint('[RTM] ❌ Chat message send failed: ${status.reason}');
+        return false;
+      }
+
+      debugPrint('[RTM] ✅ Chat message sent successfully');
+      return true;
+    } catch (e) {
+      debugPrint('[RTM] ❌ Error sending chat message: $e');
+      return false;
+    }
+  }
+
+  /// Send typing indicator to another user
+  Future<bool> sendTypingIndicator({
+    required String receiverId,
+    required bool isTyping,
+  }) async {
+    if (_rtmClient == null || !_isInitialized) {
+      return false;
+    }
+
+    try {
+      final messageData = {
+        'type': 'typing_indicator',
+        'senderId': _currentUserId,
+        'receiverId': receiverId,
+        'isTyping': isTyping,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+
+      final messageJson = jsonEncode(messageData);
+
+      final result = await _rtmClient!.publish(
+        receiverId,
+        messageJson,
+        channelType: RtmChannelType.user,
+      );
+
+      final status = result.$1;
+      return !status.error;
+    } catch (e) {
+      debugPrint('[RTM] ❌ Error sending typing indicator: $e');
+      return false;
+    }
+  }
+
+  /// Send message read receipt to another user
+  Future<bool> sendReadReceipt({
+    required String receiverId,
+    required String messageId,
+  }) async {
+    if (_rtmClient == null || !_isInitialized) {
+      return false;
+    }
+
+    try {
+      final messageData = {
+        'type': 'read_receipt',
+        'senderId': _currentUserId,
+        'receiverId': receiverId,
+        'messageId': messageId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+
+      final messageJson = jsonEncode(messageData);
+
+      final result = await _rtmClient!.publish(
+        receiverId,
+        messageJson,
+        channelType: RtmChannelType.user,
+      );
+
+      final status = result.$1;
+      return !status.error;
+    } catch (e) {
+      debugPrint('[RTM] ❌ Error sending read receipt: $e');
+      return false;
+    }
+  }
+
+  /// Send message deletion notification to another user
+  Future<bool> sendMessageDeletion({
+    required String receiverId,
+    required String messageId,
+  }) async {
+    if (_rtmClient == null || !_isInitialized) {
+      return false;
+    }
+
+    try {
+      final messageData = {
+        'type': 'message_deleted',
+        'senderId': _currentUserId,
+        'receiverId': receiverId,
+        'messageId': messageId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+
+      final messageJson = jsonEncode(messageData);
+
+      final result = await _rtmClient!.publish(
+        receiverId,
+        messageJson,
+        channelType: RtmChannelType.user,
+      );
+
+      final status = result.$1;
+      return !status.error;
+    } catch (e) {
+      debugPrint('[RTM] ❌ Error sending message deletion: $e');
+      return false;
+    }
+  }
+
+  /// Send message edit notification to another user
+  Future<bool> sendMessageEdit({
+    required String receiverId,
+    required String messageId,
+    required String newMessage,
+  }) async {
+    if (_rtmClient == null || !_isInitialized) {
+      return false;
+    }
+
+    try {
+      final messageData = {
+        'type': 'message_edited',
+        'senderId': _currentUserId,
+        'receiverId': receiverId,
+        'messageId': messageId,
+        'newMessage': newMessage,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      };
+
+      final messageJson = jsonEncode(messageData);
+
+      final result = await _rtmClient!.publish(
+        receiverId,
+        messageJson,
+        channelType: RtmChannelType.user,
+      );
+
+      final status = result.$1;
+      return !status.error;
+    } catch (e) {
+      debugPrint('[RTM] ❌ Error sending message edit: $e');
+      return false;
+    }
   }
 
   /// Cleanup and logout
@@ -604,7 +870,6 @@ class AgoraRtmService {
       _onlineUserIds.clear();
 
       debugPrint('[RTM] ✅ Cleanup complete');
-
     } catch (e) {
       debugPrint('[RTM] ❌ Cleanup error: $e');
     }

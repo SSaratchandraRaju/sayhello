@@ -1,63 +1,42 @@
-class UserModel {
-  final String id;
-  final String name;
-  final int age;
-  final String gender;
-  final String location;
-  final String? profilePic;
-  final bool isOnline;
-  final String agoraUid;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  UserModel({
-    required this.id,
-    required this.name,
-    required this.age,
-    required this.gender,
-    required this.location,
-    this.profilePic,
-    required this.isOnline,
-    required this.agoraUid,
-  });
+part 'user_model.freezed.dart';
+part 'user_model.g.dart';
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      age: json['age'] as int,
-      gender: json['gender'] as String,
-      location: json['location'] as String,
-      profilePic: json['profilePic'] as String?,
-      isOnline: json['isOnline'] as bool? ?? false,
-      agoraUid: json['agoraUid'] as String,
-    );
-  }
+@freezed
+class UserModel with _$UserModel {
+  const UserModel._();
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'age': age,
-      'gender': gender,
-      'location': location,
-      'profilePic': profilePic,
-      'isOnline': isOnline,
-      'agoraUid': agoraUid,
-    };
-  }
+  const factory UserModel({
+    required String id,
+    required String name,
+    required int age,
+    required String gender,
+    required String location,
+    String? profilePic,
+    @Default(false) bool isOnline,
+    required String agoraUid,
+    String? phoneNumber,
+    DateTime? createdAt,
+    DateTime? lastSeen,
+  }) = _UserModel;
+
+  factory UserModel.fromJson(Map<String, dynamic> json) =>
+      _$UserModelFromJson(json);
 
   // Generate random users for testing
   static List<UserModel> generateRandomUsers() {
     return [
-      UserModel(
+      const UserModel(
         id: 'user_001',
         name: 'Saratchandra',
         age: 28,
         gender: 'male',
         location: 'Hyderabad',
-        isOnline: false, // Will be set dynamically based on who selected this user
+        isOnline: false,
         agoraUid: 'agora_1001',
       ),
-      UserModel(
+      const UserModel(
         id: 'user_002',
         name: 'Pavan',
         age: 26,
@@ -66,7 +45,7 @@ class UserModel {
         isOnline: false,
         agoraUid: 'agora_1002',
       ),
-      UserModel(
+      const UserModel(
         id: 'user_003',
         name: 'Hanish',
         age: 25,
@@ -75,7 +54,7 @@ class UserModel {
         isOnline: false,
         agoraUid: 'agora_1003',
       ),
-      UserModel(
+      const UserModel(
         id: 'user_004',
         name: 'Harika',
         age: 24,
@@ -84,7 +63,7 @@ class UserModel {
         isOnline: false,
         agoraUid: 'agora_1004',
       ),
-      UserModel(
+      const UserModel(
         id: 'user_005',
         name: 'Pavani',
         age: 23,
@@ -93,7 +72,7 @@ class UserModel {
         isOnline: false,
         agoraUid: 'agora_1005',
       ),
-      UserModel(
+      const UserModel(
         id: 'user_006',
         name: 'Santhi',
         age: 27,
@@ -102,7 +81,7 @@ class UserModel {
         isOnline: false,
         agoraUid: 'agora_1006',
       ),
-      UserModel(
+      const UserModel(
         id: 'user_007',
         name: 'Charan',
         age: 29,
@@ -111,7 +90,7 @@ class UserModel {
         isOnline: false,
         agoraUid: 'agora_1007',
       ),
-      UserModel(
+      const UserModel(
         id: 'user_008',
         name: 'Chandrika',
         age: 25,
@@ -121,28 +100,5 @@ class UserModel {
         agoraUid: 'agora_1008',
       ),
     ];
-  }
-
-  // Create a copy with updated fields
-  UserModel copyWith({
-    String? id,
-    String? name,
-    int? age,
-    String? gender,
-    String? location,
-    String? profilePic,
-    bool? isOnline,
-    String? agoraUid,
-  }) {
-    return UserModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      age: age ?? this.age,
-      gender: gender ?? this.gender,
-      location: location ?? this.location,
-      profilePic: profilePic ?? this.profilePic,
-      isOnline: isOnline ?? this.isOnline,
-      agoraUid: agoraUid ?? this.agoraUid,
-    );
   }
 }

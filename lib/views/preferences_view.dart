@@ -16,8 +16,16 @@ class _PreferencesViewState extends State<PreferencesView> {
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
   final List<String> _locations = [
-    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai',
-    'Kolkata', 'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow',
+    'Mumbai',
+    'Delhi',
+    'Bangalore',
+    'Hyderabad',
+    'Chennai',
+    'Kolkata',
+    'Pune',
+    'Ahmedabad',
+    'Jaipur',
+    'Lucknow',
   ];
 
   Future<void> _savePreferences() async {
@@ -25,7 +33,7 @@ class _PreferencesViewState extends State<PreferencesView> {
       _showError('Please select your gender');
       return;
     }
-    
+
     if (_selectedLocation == null) {
       _showError('Please select your location');
       return;
@@ -116,7 +124,7 @@ class _PreferencesViewState extends State<PreferencesView> {
                   ],
                 ),
               ),
-              
+
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24.0),
@@ -131,7 +139,8 @@ class _PreferencesViewState extends State<PreferencesView> {
                           children: _genders.map((gender) {
                             final isSelected = _selectedGender == gender;
                             return GestureDetector(
-                              onTap: () => setState(() => _selectedGender = gender),
+                              onTap: () =>
+                                  setState(() => _selectedGender = gender),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 24,
@@ -166,9 +175,9 @@ class _PreferencesViewState extends State<PreferencesView> {
                           }).toList(),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Age Range Selection
                       _buildSection(
                         title: '2. Age Preference',
@@ -210,9 +219,9 @@ class _PreferencesViewState extends State<PreferencesView> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 32),
-                      
+
                       // Location Selection
                       _buildSection(
                         title: '3. Your Location',
@@ -229,7 +238,9 @@ class _PreferencesViewState extends State<PreferencesView> {
                             child: DropdownButton<String>(
                               value: _selectedLocation,
                               hint: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: Text(
                                   'Select Location',
                                   style: TextStyle(
@@ -241,16 +252,23 @@ class _PreferencesViewState extends State<PreferencesView> {
                               dropdownColor: const Color(0xFF764ba2),
                               icon: const Padding(
                                 padding: EdgeInsets.only(right: 16),
-                                child: Icon(Icons.arrow_drop_down, color: Colors.white),
+                                child: Icon(
+                                  Icons.arrow_drop_down,
+                                  color: Colors.white,
+                                ),
                               ),
                               items: _locations.map((location) {
                                 return DropdownMenuItem<String>(
                                   value: location,
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
                                     child: Text(
                                       location,
-                                      style: const TextStyle(color: Colors.white),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -262,9 +280,9 @@ class _PreferencesViewState extends State<PreferencesView> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 48),
-                      
+
                       // Continue Button
                       SizedBox(
                         width: double.infinity,
@@ -278,7 +296,9 @@ class _PreferencesViewState extends State<PreferencesView> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            disabledBackgroundColor: Colors.white.withOpacity(0.7),
+                            disabledBackgroundColor: Colors.white.withOpacity(
+                              0.7,
+                            ),
                           ),
                           child: _isLoading
                               ? const SizedBox(
@@ -301,9 +321,9 @@ class _PreferencesViewState extends State<PreferencesView> {
                                 ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Skip Button
                       TextButton(
                         onPressed: () => Get.offAllNamed('/users-list'),
@@ -334,10 +354,7 @@ class _PreferencesViewState extends State<PreferencesView> {
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-          width: 1.5,
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),

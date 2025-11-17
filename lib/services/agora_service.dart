@@ -1,4 +1,4 @@
- import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/foundation.dart';
 import '../config/app_config.dart';
@@ -42,7 +42,7 @@ class AgoraService {
   /// Optional async token provider callback used to fetch/refresh tokens.
   /// Should return a fresh token for the current channel/uid.
   Future<String?> Function(String channel, int uid)? tokenProvider;
-  
+
   /// Optional callback when all remote users have left the channel
   Function()? onAllUsersLeft;
 
@@ -59,64 +59,72 @@ class AgoraService {
       _logInfo('Agora Engine already initialized, skipping...');
       return;
     }
-    
+
     _logInfo('Initializing Agora Engine');
     _engine = createAgoraRtcEngine();
-    await _engine!.initialize(RtcEngineContext(
-      appId: AppConfig.agoraAppId,
-      channelProfile: ChannelProfileType.channelProfileCommunication,
-    ));
+    await _engine!.initialize(
+      RtcEngineContext(
+        appId: AppConfig.agoraAppId,
+        channelProfile: ChannelProfileType.channelProfileCommunication,
+      ),
+    );
 
     // register event handlers
-    _engine!.registerEventHandler(RtcEngineEventHandler(
-      onError: (ErrorCodeType code, String? msg) {
-  _logError('Agora error: $code ${msg ?? ''}');
-        // handle invalid token by attempting to refresh
-        if (code == ErrorCodeType.errInvalidToken) {
-          _logInfo('Received errInvalidToken');
-          _handleErrInvalidTokenEvent();
-        }
-      },
-      onJoinChannelSuccess: (connection, elapsed) {
-  _joined = true;
-  _logInfo('✅ Successfully joined channel: ${connection.channelId} with UID: ${connection.localUid}');
-  _logInfo('⏱️  Elapsed time: $elapsed ms');
-      },
-      onUserJoined: (connection, remoteUid, elapsed) {
-  _remoteUid = remoteUid;
-  remoteUidNotifier.value = remoteUid;
-  _logInfo('👤 Remote user JOINED: UID=$remoteUid (elapsed: $elapsed ms)');
-  _logInfo('🎉 You should now see the remote user\'s video!');
-      },
-      onUserOffline: (connection, remoteUid, reason) {
-        _logInfo('User offline: $remoteUid, reason: $reason');
-        if (_remoteUid == remoteUid) {
+    _engine!.registerEventHandler(
+      RtcEngineEventHandler(
+        onError: (ErrorCodeType code, String? msg) {
+          _logError('Agora error: $code ${msg ?? ''}');
+          // handle invalid token by attempting to refresh
+          if (code == ErrorCodeType.errInvalidToken) {
+            _logInfo('Received errInvalidToken');
+            _handleErrInvalidTokenEvent();
+          }
+        },
+        onJoinChannelSuccess: (connection, elapsed) {
+          _joined = true;
+          _logInfo(
+            '✅ Successfully joined channel: ${connection.channelId} with UID: ${connection.localUid}',
+          );
+          _logInfo('⏱️  Elapsed time: $elapsed ms');
+        },
+        onUserJoined: (connection, remoteUid, elapsed) {
+          _remoteUid = remoteUid;
+          remoteUidNotifier.value = remoteUid;
+          _logInfo(
+            '👤 Remote user JOINED: UID=$remoteUid (elapsed: $elapsed ms)',
+          );
+          _logInfo('🎉 You should now see the remote user\'s video!');
+        },
+        onUserOffline: (connection, remoteUid, reason) {
+          _logInfo('User offline: $remoteUid, reason: $reason');
+          if (_remoteUid == remoteUid) {
+            _remoteUid = null;
+            remoteUidNotifier.value = null;
+
+            // Notify that all users have left (in a 1-on-1 call scenario)
+            // For multi-user support, you'd track all remote UIDs
+            if (onAllUsersLeft != null) {
+              _logInfo('All remote users left, triggering callback');
+              onAllUsersLeft!();
+            }
+          }
+        },
+        onLeaveChannel: (connection, stats) {
+          _joined = false;
           _remoteUid = null;
           remoteUidNotifier.value = null;
-          
-          // Notify that all users have left (in a 1-on-1 call scenario)
-          // For multi-user support, you'd track all remote UIDs
-          if (onAllUsersLeft != null) {
-            _logInfo('All remote users left, triggering callback');
-            onAllUsersLeft!();
-          }
-        }
-      },
-      onLeaveChannel: (connection, stats) {
-        _joined = false;
-        _remoteUid = null;
-        remoteUidNotifier.value = null;
-        _logInfo('Left channel');
-        // Clear stored channel/token on leave
-        _currentChannel = null;
-        _currentToken = null;
-      },
-      onTokenPrivilegeWillExpire: (connection, token) async {
-        _logInfo('Token privilege will expire soon');
-        await _attemptTokenRefresh();
-      },
-    ));
-    
+          _logInfo('Left channel');
+          // Clear stored channel/token on leave
+          _currentChannel = null;
+          _currentToken = null;
+        },
+        onTokenPrivilegeWillExpire: (connection, token) async {
+          _logInfo('Token privilege will expire soon');
+          await _attemptTokenRefresh();
+        },
+      ),
+    );
+
     _isInitialized = true;
   }
 
@@ -131,8 +139,12 @@ class AgoraService {
     return ok;
   }
 
-  Future<void> joinChannel(String channelName, {String? token, int uid = 0}) async {
-  _logInfo('Joining channel: $channelName');
+  Future<void> joinChannel(
+    String channelName, {
+    String? token,
+    int uid = 0,
+  }) async {
+    _logInfo('Joining channel: $channelName');
     final ok = await _ensurePermissions();
     if (!ok) return;
 
@@ -149,7 +161,9 @@ class AgoraService {
           token = fetched;
           _logInfo('Fetched token from tokenProvider');
         } else {
-          _logInfo('tokenProvider returned null/empty token; will fall back to stored/AppConfig.tempToken');
+          _logInfo(
+            'tokenProvider returned null/empty token; will fall back to stored/AppConfig.tempToken',
+          );
         }
       } catch (e, st) {
         _logError('tokenProvider threw while fetching initial token: $e');
@@ -166,9 +180,13 @@ class AgoraService {
 
     final joinToken = token ?? AppConfig.tempToken ?? '';
     if (joinToken.isEmpty) {
-      _logInfo('⚠️  Joining without a token (using empty token) — this may trigger errInvalidToken if the project requires tokens');
+      _logInfo(
+        '⚠️  Joining without a token (using empty token) — this may trigger errInvalidToken if the project requires tokens',
+      );
     } else {
-      _logInfo('🔑 Using token: ${joinToken.substring(0, 20)}... (length: ${joinToken.length})');
+      _logInfo(
+        '🔑 Using token: ${joinToken.substring(0, 20)}... (length: ${joinToken.length})',
+      );
     }
 
     _logInfo('📡 Attempting to join channel: $channelName with UID: $uid');
@@ -200,14 +218,17 @@ class AgoraService {
     }
 
     final now = DateTime.now();
-    if (_nextAllowedRefreshTime != null && now.isBefore(_nextAllowedRefreshTime!)) {
+    if (_nextAllowedRefreshTime != null &&
+        now.isBefore(_nextAllowedRefreshTime!)) {
       final wait = _nextAllowedRefreshTime!.difference(now).inSeconds;
       _logInfo('Token refresh suppressed; next allowed in ${wait}s');
       return;
     }
 
     if (_refreshFailCount >= _maxRefreshFailures) {
-      _logError('Max token refresh failures reached ($_refreshFailCount); will not retry automatically');
+      _logError(
+        'Max token refresh failures reached ($_refreshFailCount); will not retry automatically',
+      );
       return;
     }
 
@@ -227,21 +248,29 @@ class AgoraService {
 
       // If we're about to renew the same token we last renewed and there's no tokenProvider
       // (i.e. using fallback token), avoid looping renews
-      if (tokenProvider == null && _lastRenewedToken != null && newToken == _lastRenewedToken) {
+      if (tokenProvider == null &&
+          _lastRenewedToken != null &&
+          newToken == _lastRenewedToken) {
         _refreshFailCount += 1;
         final backoffSec = 1 << (_refreshFailCount > 6 ? 6 : _refreshFailCount);
-        _nextAllowedRefreshTime = DateTime.now().add(Duration(seconds: backoffSec));
-        _logError('Attempted to renew same fallback token repeatedly; backing off $backoffSec seconds (fail=$_refreshFailCount)');
+        _nextAllowedRefreshTime = DateTime.now().add(
+          Duration(seconds: backoffSec),
+        );
+        _logError(
+          'Attempted to renew same fallback token repeatedly; backing off $backoffSec seconds (fail=$_refreshFailCount)',
+        );
         return;
       }
 
       if (newToken == null || newToken.isEmpty) {
-        _logError('No token available to renew (tokenProvider/stored/AppConfig.tempToken empty)');
+        _logError(
+          'No token available to renew (tokenProvider/stored/AppConfig.tempToken empty)',
+        );
         return;
       }
 
       _currentToken = newToken;
-      _logInfo('Renewing Agora token (fallback=${tokenProvider==null})');
+      _logInfo('Renewing Agora token (fallback=${tokenProvider == null})');
       await _engine!.renewToken(newToken);
       _logInfo('Token renewed successfully');
 
@@ -256,7 +285,9 @@ class AgoraService {
 
       // exponential backoff delay before allowing another attempt
       final backoffSec = 1 << (_refreshFailCount > 6 ? 6 : _refreshFailCount);
-      _nextAllowedRefreshTime = DateTime.now().add(Duration(seconds: backoffSec));
+      _nextAllowedRefreshTime = DateTime.now().add(
+        Duration(seconds: backoffSec),
+      );
     } finally {
       _isRefreshingToken = false;
     }
@@ -265,7 +296,8 @@ class AgoraService {
   /// Handle errInvalidToken event frequency and decide whether to invoke refresh.
   void _handleErrInvalidTokenEvent() {
     final now = DateTime.now();
-    if (_lastErrInvalidTime == null || now.difference(_lastErrInvalidTime!) > _errInvalidWindow) {
+    if (_lastErrInvalidTime == null ||
+        now.difference(_lastErrInvalidTime!) > _errInvalidWindow) {
       _errInvalidCount = 1;
       _lastErrInvalidTime = now;
     } else {
@@ -274,14 +306,18 @@ class AgoraService {
     }
 
     if (_errInvalidCount > _maxErrInvalidInWindow) {
-      _logError('errInvalidToken received >$_maxErrInvalidInWindow times within ${_errInvalidWindow.inSeconds}s; suppressing further automatic refreshes');
+      _logError(
+        'errInvalidToken received >$_maxErrInvalidInWindow times within ${_errInvalidWindow.inSeconds}s; suppressing further automatic refreshes',
+      );
       // set a cooldown to avoid further attempts for a while
       _nextAllowedRefreshTime = DateTime.now().add(Duration(seconds: 30));
       return;
     }
 
     // Otherwise, attempt a refresh (async fire-and-forget)
-    _logInfo('errInvalidToken count=$_errInvalidCount; attempting token refresh');
+    _logInfo(
+      'errInvalidToken count=$_errInvalidCount; attempting token refresh',
+    );
     _attemptTokenRefresh();
   }
 

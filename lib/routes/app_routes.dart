@@ -8,7 +8,9 @@ abstract class Routes {
   static const VOICE_CALL = '/voice-call';
   static const VIDEO_CALL = '/video-call';
   static const PROFILE_SETUP = '/profile-setup';
-  
+  static const CHAT = '/chat';
+  static const CONVERSATIONS = '/conversations';
+
   // Old routes (kept for backward compatibility)
   static const LOGIN = '/login-old';
   static const USERS = '/users-old';

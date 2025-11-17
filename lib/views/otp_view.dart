@@ -15,10 +15,10 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     (index) => TextEditingController(),
   );
   final List<FocusNode> _focusNodes = List.generate(4, (index) => FocusNode());
-  
+
   bool _isLoading = false;
   String? _phoneNumber;
-  
+
   // Fixed OTP for now
   static const String _fixedOTP = '1234';
 
@@ -42,7 +42,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
 
   Future<void> _verifyOTP() async {
     final otp = _otpControllers.map((c) => c.text).join();
-    
+
     if (otp.length != 4) {
       _showError('Please enter complete OTP');
       return;
@@ -76,7 +76,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
     // Check fixed OTP
     if (otp == _fixedOTP) {
       setState(() => _isLoading = false);
-      
+
       // Navigate to user selection screen
       if (mounted) {
         Get.offAllNamed('/profile-setup');
@@ -148,7 +148,10 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                       ),
                       style: TextButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.2),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -157,7 +160,7 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                   ],
                 ),
               ),
-              
+
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
@@ -186,9 +189,9 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                             color: Color(0xFF667eea),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 40),
-                        
+
                         // Title
                         const Text(
                           'Enter OTP',
@@ -198,9 +201,9 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                             color: Colors.white,
                           ),
                         ),
-                        
+
                         const SizedBox(height: 8),
-                        
+
                         if (_phoneNumber != null)
                           Text(
                             'Code sent to +91 $_phoneNumber',
@@ -210,9 +213,9 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                        
+
                         const SizedBox(height: 48),
-                        
+
                         // OTP Input Card
                         Container(
                           constraints: const BoxConstraints(maxWidth: 400),
@@ -236,7 +239,8 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                             children: [
                               // OTP Input Fields
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
                                 children: List.generate(
                                   4,
                                   (index) => SizedBox(
@@ -259,21 +263,33 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                                       decoration: InputDecoration(
                                         counterText: '',
                                         filled: true,
-                                        fillColor: Colors.white.withOpacity(0.2),
+                                        fillColor: Colors.white.withOpacity(
+                                          0.2,
+                                        ),
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           borderSide: BorderSide(
-                                            color: Colors.white.withOpacity(0.3),
+                                            color: Colors.white.withOpacity(
+                                              0.3,
+                                            ),
                                           ),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           borderSide: BorderSide(
-                                            color: Colors.white.withOpacity(0.3),
+                                            color: Colors.white.withOpacity(
+                                              0.3,
+                                            ),
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           borderSide: const BorderSide(
                                             color: Colors.white,
                                             width: 2,
@@ -292,9 +308,9 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                                   ),
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 24),
-                              
+
                               // Hint Text
                               Text(
                                 'For testing, use OTP: $_fixedOTP',
@@ -303,9 +319,9 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                                   fontSize: 12,
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 24),
-                              
+
                               // Verify Button
                               SizedBox(
                                 width: double.infinity,
@@ -319,7 +335,8 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
                                     ),
-                                    disabledBackgroundColor: Colors.white.withOpacity(0.7),
+                                    disabledBackgroundColor: Colors.white
+                                        .withOpacity(0.7),
                                   ),
                                   child: _isLoading
                                       ? const SizedBox(
@@ -327,9 +344,10 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                                           width: 24,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2.5,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              Color(0xFF667eea),
-                                            ),
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                  Color(0xFF667eea),
+                                                ),
                                           ),
                                         )
                                       : const Text(
@@ -345,9 +363,9 @@ class _OtpVerificationViewState extends State<OtpVerificationView> {
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: 24),
-                        
+
                         // Resend OTP
                         TextButton(
                           onPressed: () {

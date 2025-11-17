@@ -38,7 +38,7 @@ class _UserSelectionViewState extends State<UserSelectionView> {
 
     // Simulate API call and use test data
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     setState(() {
       _availableUsers = UserModel.generateRandomUsers();
       _isLoading = false;
@@ -53,7 +53,7 @@ class _UserSelectionViewState extends State<UserSelectionView> {
 
     // Set this user as the current logged-in user
     await _onlineService.setCurrentUser(_selectedUser!);
-    
+
     // Simulate other users being online (for demo)
     _onlineService.simulateOnlineUsers();
 
@@ -71,9 +71,7 @@ class _UserSelectionViewState extends State<UserSelectionView> {
     // }
 
     // Navigate to preferences screen (skip for now, go directly to users list)
-    Get.offAllNamed('/users-list', arguments: {
-      'selectedUser': _selectedUser,
-    });
+    Get.offAllNamed('/users-list', arguments: {'selectedUser': _selectedUser});
   }
 
   void _showError(String message) {
@@ -131,28 +129,31 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                   ],
                 ),
               ),
-              
+
               // Users Grid
               Expanded(
                 child: _isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.85,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.85,
+                            ),
                         itemCount: _availableUsers.length,
                         itemBuilder: (context, index) {
                           final user = _availableUsers[index];
                           final isSelected = _selectedUser?.id == user.id;
-                          
+
                           return GestureDetector(
                             onTap: () {
                               setState(() {
@@ -210,16 +211,22 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                                     width: 74,
                                                     height: 74,
                                                     fit: BoxFit.cover,
-                                                    errorBuilder: (_, __, ___) => Text(
-                                                      user.name[0].toUpperCase(),
-                                                      style: TextStyle(
-                                                        color: isSelected
-                                                            ? Colors.white
-                                                            : Colors.white.withOpacity(0.9),
-                                                        fontSize: 32,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                    ),
+                                                    errorBuilder:
+                                                        (_, __, ___) => Text(
+                                                          user.name[0]
+                                                              .toUpperCase(),
+                                                          style: TextStyle(
+                                                            color: isSelected
+                                                                ? Colors.white
+                                                                : Colors.white
+                                                                      .withOpacity(
+                                                                        0.9,
+                                                                      ),
+                                                            fontSize: 32,
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                          ),
+                                                        ),
                                                   ),
                                                 )
                                               : Text(
@@ -227,7 +234,8 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                                   style: TextStyle(
                                                     color: isSelected
                                                         ? Colors.white
-                                                        : Colors.white.withOpacity(0.9),
+                                                        : Colors.white
+                                                              .withOpacity(0.9),
                                                     fontSize: 32,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -258,12 +266,14 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                         ),
                                     ],
                                   ),
-                                  
+
                                   const SizedBox(height: 12),
-                                  
+
                                   // User Name
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
                                     child: Text(
                                       user.name,
                                       textAlign: TextAlign.center,
@@ -278,9 +288,9 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                       ),
                                     ),
                                   ),
-                                  
+
                                   const SizedBox(height: 4),
-                                  
+
                                   // User Info
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -289,7 +299,9 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                         Icons.cake_outlined,
                                         size: 12,
                                         color: isSelected
-                                            ? const Color(0xFF667eea).withOpacity(0.7)
+                                            ? const Color(
+                                                0xFF667eea,
+                                              ).withOpacity(0.7)
                                             : Colors.white.withOpacity(0.7),
                                       ),
                                       const SizedBox(width: 4),
@@ -298,7 +310,9 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: isSelected
-                                              ? const Color(0xFF667eea).withOpacity(0.7)
+                                              ? const Color(
+                                                  0xFF667eea,
+                                                ).withOpacity(0.7)
                                               : Colors.white.withOpacity(0.7),
                                         ),
                                       ),
@@ -309,14 +323,16 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                             : Icons.female,
                                         size: 12,
                                         color: isSelected
-                                            ? const Color(0xFF667eea).withOpacity(0.7)
+                                            ? const Color(
+                                                0xFF667eea,
+                                              ).withOpacity(0.7)
                                             : Colors.white.withOpacity(0.7),
                                       ),
                                     ],
                                   ),
-                                  
+
                                   const SizedBox(height: 4),
-                                  
+
                                   // Location
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
@@ -325,7 +341,9 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                         Icons.location_on_outlined,
                                         size: 12,
                                         color: isSelected
-                                            ? const Color(0xFF667eea).withOpacity(0.7)
+                                            ? const Color(
+                                                0xFF667eea,
+                                              ).withOpacity(0.7)
                                             : Colors.white.withOpacity(0.7),
                                       ),
                                       const SizedBox(width: 4),
@@ -337,7 +355,9 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                                           style: TextStyle(
                                             fontSize: 11,
                                             color: isSelected
-                                                ? const Color(0xFF667eea).withOpacity(0.7)
+                                                ? const Color(
+                                                    0xFF667eea,
+                                                  ).withOpacity(0.7)
                                                 : Colors.white.withOpacity(0.7),
                                           ),
                                         ),
@@ -351,7 +371,7 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                         },
                       ),
               ),
-              
+
               // Continue Button
               Padding(
                 padding: const EdgeInsets.all(24),
@@ -361,7 +381,9 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _selectedUser != null ? _confirmSelection : null,
+                        onPressed: _selectedUser != null
+                            ? _confirmSelection
+                            : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF667eea),
@@ -369,7 +391,9 @@ class _UserSelectionViewState extends State<UserSelectionView> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          disabledBackgroundColor: Colors.white.withOpacity(0.3),
+                          disabledBackgroundColor: Colors.white.withOpacity(
+                            0.3,
+                          ),
                         ),
                         child: const Text(
                           'Continue',

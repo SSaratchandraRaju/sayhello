@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../services/agora_rtm_service.dart';
+import '../services/ringtone_service.dart';
 import '../models/user_model.dart';
 import 'dart:async';
 
@@ -25,13 +26,17 @@ class IncomingCallScreen extends StatefulWidget {
 class _IncomingCallScreenState extends State<IncomingCallScreen>
     with SingleTickerProviderStateMixin {
   final AgoraRtmService _rtmService = AgoraRtmService();
+  final RingtoneService _ringtoneService = RingtoneService();
   late AnimationController _pulseController;
   Timer? _autoDeclineTimer;
 
   @override
   void initState() {
     super.initState();
-    
+
+    // Start ringtone and vibration
+    _ringtoneService.start();
+
     // Pulse animation for the avatar
     _pulseController = AnimationController(
       vsync: this,
@@ -48,6 +53,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   @override
   void dispose() {
+    // Stop ringtone and vibration
+    _ringtoneService.stop();
     _pulseController.dispose();
     _autoDeclineTimer?.cancel();
     super.dispose();
@@ -55,7 +62,13 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   Future<void> _acceptCall() async {
     _autoDeclineTimer?.cancel();
-    
+
+    // Stop ringtone and vibration
+    await _ringtoneService.stop();
+
+    // Play short vibration feedback
+    await _ringtoneService.playShortVibration();
+
     // Send accept signal via RTM
     await _rtmService.sendCallAccepted(
       callerId: widget.callerId,
@@ -64,9 +77,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
     // Navigate to call screen
     if (!mounted) return;
-    
+
     final routeName = widget.isVideo ? '/video-call' : '/voice-call';
-    
+
     // Create a UserModel for the caller with minimal info
     final callerUser = UserModel(
       id: widget.callerId,
@@ -77,7 +90,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
       isOnline: true,
       agoraUid: widget.callerId, // Use same as user ID
     );
-    
+
     // Close this screen and navigate to call
     Get.back();
     Get.toNamed(
@@ -92,7 +105,13 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
 
   Future<void> _declineCall() async {
     _autoDeclineTimer?.cancel();
-    
+
+    // Stop ringtone and vibration
+    await _ringtoneService.stop();
+
+    // Play short vibration feedback
+    await _ringtoneService.playShortVibration();
+
     // Send decline signal via RTM
     await _rtmService.sendCallDeclined(callerId: widget.callerId);
 
@@ -118,14 +137,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: widget.isVideo
-                  ? [
-                      const Color(0xFF667eea),
-                      const Color(0xFF764ba2),
-                    ]
-                  : [
-                      Colors.green.shade700,
-                      Colors.green.shade900,
-                    ],
+                  ? [const Color(0xFF667eea), const Color(0xFF764ba2)]
+                  : [Colors.green.shade700, Colors.green.shade900],
             ),
           ),
           child: SafeArea(
@@ -164,10 +177,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.white.withOpacity(0.2),
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 3,
-                            ),
+                            border: Border.all(color: Colors.white, width: 3),
                           ),
                           child: Center(
                             child: Text(

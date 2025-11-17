@@ -8,18 +8,35 @@ import 'routes/app_pages.dart';
 import 'routes/app_routes.dart';
 import 'services/agora_service.dart';
 import 'config/app_config.dart';
+import 'config/environment_config.dart';
+import 'core/network/api_client.dart';
+import 'core/di/dependency_injection.dart';
 import 'utils/agora_token_builder.dart';
 // screens are imported by the route definitions in `app_pages.dart`
 
-void main() {
+void main() async {
+  // Ensure Flutter bindings are initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize environment configuration
+  await EnvironmentConfig.init();
+  EnvironmentConfig.printConfig();
+
+  // Initialize API client
+  await ApiClient().init();
+
+  // Initialize dependency injection
+  await DependencyInjection.init();
+
   // Wire automatic token generation for Agora
   // This will generate tokens on-the-fly for ANY channel name
   // Perfect for Quick Join and custom channel names!
   AgoraService().tokenProvider = (String channel, int uid) async {
     debugPrint('[TOKEN] Generating token for channel: $channel, UID: $uid');
-    
+
     // Option 1: If App Certificate is set, generate token locally (BEST for production)
-    if (AppConfig.agoraCertificate != null && AppConfig.agoraCertificate!.isNotEmpty) {
+    if (AppConfig.agoraCertificate != null &&
+        AppConfig.agoraCertificate!.isNotEmpty) {
       try {
         final token = AgoraTokenBuilder.buildTokenWithUid(
           appId: AppConfig.agoraAppId,
@@ -27,15 +44,19 @@ void main() {
           channelName: channel,
           uid: uid,
           role: AgoraTokenBuilder.rolePublisher,
-          privilegeExpiredTs: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 86400, // 24 hours
+          privilegeExpiredTs:
+              (DateTime.now().millisecondsSinceEpoch ~/ 1000) +
+              86400, // 24 hours
         );
-        debugPrint('[TOKEN] ✅ Generated token locally: ${token.substring(0, 30)}...');
+        debugPrint(
+          '[TOKEN] ✅ Generated token locally: ${token.substring(0, 30)}...',
+        );
         return token;
       } catch (e) {
         debugPrint('[TOKEN] ❌ Error generating token: $e');
       }
     }
-    
+
     // Option 2: Try token server if configured
     final url = AppConfig.tokenServerUrl;
     if (url != null && url.isNotEmpty) {
@@ -57,7 +78,11 @@ void main() {
           }
 
           final resp = await http
-              .post(uri, headers: headers, body: jsonEncode({'channel': channel, 'uid': uid}))
+              .post(
+                uri,
+                headers: headers,
+                body: jsonEncode({'channel': channel, 'uid': uid}),
+              )
               .timeout(const Duration(seconds: 6));
 
           if (resp.statusCode == 200) {
@@ -84,9 +109,11 @@ void main() {
       debugPrint('[TOKEN] ⚠️  Using fallback tempToken');
       return AppConfig.tempToken;
     }
-    
+
     // No token available - will use empty string (only works if App Certificate is disabled)
-    debugPrint('[TOKEN] ⚠️  No token generation method available - using empty token');
+    debugPrint(
+      '[TOKEN] ⚠️  No token generation method available - using empty token',
+    );
     return '';
   };
 
