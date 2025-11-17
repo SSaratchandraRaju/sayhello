@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../services/agora_service.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
+import '../widgets/buttons/app_buttons.dart';
+import '../widgets/inputs/app_text_field.dart';
+import '../widgets/snackbar/app_snackbar.dart';
 import 'call_view.dart';
 
 class HomeView extends StatefulWidget {
@@ -63,15 +68,9 @@ class _HomeViewState extends State<HomeView>
   Future<void> _joinChannel() async {
     final channelName = _channelController.text.trim();
     if (channelName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please enter a channel name'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          backgroundColor: Colors.red.shade400,
-        ),
+      AppSnackbar.error(
+        message: 'Please enter a channel name',
+        title: 'Channel Required',
       );
       return;
     }
@@ -95,15 +94,9 @@ class _HomeViewState extends State<HomeView>
       // The CallView will initialize and join the channel shortly after it's shown.
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to join: $e'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          backgroundColor: Colors.red.shade400,
-        ),
+      AppSnackbar.error(
+        message: 'Failed to join: $e',
+        title: 'Join Failed',
       );
     } finally {
       if (mounted) setState(() => _isJoining = false);
@@ -123,440 +116,431 @@ class _HomeViewState extends State<HomeView>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF667eea),
-              const Color(0xFF764ba2),
-              const Color(0xFFf093fb),
+              Color(0xFF4F46E5), // Deep Indigo
+              Color(0xFF7C3AED), // Purple
+              Color(0xFF9D8FF5), // Lavender
             ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation ?? AlwaysStoppedAnimation<double>(1.0),
-            child: SlideTransition(
-              position:
-                  _slideAnimation ??
-                  AlwaysStoppedAnimation<Offset>(Offset.zero),
-              child: Column(
-                children: [
-                  // Custom App Bar
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Row(
-                      children: [
-                        Text(
-                          'Join Channel',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
+        child: Stack(
+          children: [
+            // Animated gradient orbs
+            ...List.generate(3, (index) {
+              return Positioned(
+                top: index == 0 ? -100 : (index == 1 ? 200 : null),
+                bottom: index == 2 ? -50 : null,
+                left: index == 1 ? -50 : null,
+                right: index == 0 || index == 2 ? -50 : null,
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.1),
+                        Colors.transparent,
                       ],
                     ),
                   ),
-
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                        child: Column(
+                ),
+              );
+            }),
+            
+            SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnimation ?? AlwaysStoppedAnimation<double>(1.0),
+                child: SlideTransition(
+                  position:
+                      _slideAnimation ??
+                      AlwaysStoppedAnimation<Offset>(Offset.zero),
+                  child: Column(
+                    children: [
+                      // Premium App Bar
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+                        child: Row(
                           children: [
-                            // User Info Card
                             Container(
-                              constraints: BoxConstraints(maxWidth: 450),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(24),
+                                gradient: AppColors.glassGradient,
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withOpacity(0.3),
                                   width: 1.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 15),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
                                   ),
                                 ],
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                    sigmaX: 10,
-                                    sigmaY: 10,
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(24.0),
-                                    child: Row(
-                                      children: [
-                                        // Avatar
-                                        Container(
-                                          width: 60,
-                                          height: 60,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.25,
-                                            ),
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: Colors.white.withOpacity(
-                                                0.4,
-                                              ),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              (_currentUserName?.isNotEmpty ??
-                                                      false)
-                                                  ? _currentUserName![0]
-                                                        .toUpperCase()
-                                                  : 'U',
-                                              style: const TextStyle(
-                                                fontSize: 24,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        // User Info
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                _currentUserName ?? 'User',
-                                                style: const TextStyle(
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Container(
-                                                    width: 8,
-                                                    height: 8,
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.greenAccent,
-                                                      shape: BoxShape.circle,
-                                                      boxShadow: [
-                                                        BoxShadow(
-                                                          color: Colors
-                                                              .greenAccent
-                                                              .withOpacity(0.5),
-                                                          blurRadius: 8,
-                                                          spreadRadius: 2,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    'Online',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.white
-                                                          .withOpacity(0.85),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                              child: Icon(
+                                Icons.video_library_rounded,
+                                color: Colors.white,
+                                size: 28,
                               ),
                             ),
-
-                            const SizedBox(height: 32),
-
-                            // Channel Input Card
-                            Container(
-                              constraints: BoxConstraints(maxWidth: 450),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 30,
-                                    offset: const Offset(0, 15),
-                                  ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(24),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(
-                                    sigmaX: 10,
-                                    sigmaY: 10,
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(32.0),
-                                    child: Column(
-                                      children: [
-                                        // Title
-                                        const Text(
-                                          'Enter Channel',
-                                          style: TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Join an existing room or create a new one',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.white.withOpacity(
-                                              0.8,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 32),
-
-                                        // Channel Input
-                                        Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.2,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                            border: Border.all(
-                                              color: Colors.white.withOpacity(
-                                                0.3,
-                                              ),
-                                              width: 1,
-                                            ),
-                                          ),
-                                          child: TextField(
-                                            controller: _channelController,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                            ),
-                                            decoration: InputDecoration(
-                                              hintText: 'Channel Name',
-                                              hintStyle: TextStyle(
-                                                color: Colors.white.withOpacity(
-                                                  0.6,
-                                                ),
-                                              ),
-                                              prefixIcon: Icon(
-                                                Icons.tag_rounded,
-                                                color: Colors.white.withOpacity(
-                                                  0.8,
-                                                ),
-                                              ),
-                                              border: InputBorder.none,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 20,
-                                                    vertical: 18,
-                                                  ),
-                                            ),
-                                            onSubmitted: (_) => _joinChannel(),
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 20),
-
-                                        // Join Button
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 56,
-                                          child: ElevatedButton(
-                                            onPressed: _isJoining
-                                                ? null
-                                                : _joinChannel,
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.white,
-                                              foregroundColor: const Color(
-                                                0xFF667eea,
-                                              ),
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                              ),
-                                              disabledBackgroundColor: Colors
-                                                  .white
-                                                  .withOpacity(0.7),
-                                            ),
-                                            child: _isJoining
-                                                ? SizedBox(
-                                                    height: 24,
-                                                    width: 24,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2.5,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(
-                                                            const Color(
-                                                              0xFF667eea,
-                                                            ),
-                                                          ),
-                                                    ),
-                                                  )
-                                                : Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    children: const [
-                                                      Icon(
-                                                        Icons
-                                                            .video_call_rounded,
-                                                        size: 22,
-                                                      ),
-                                                      SizedBox(width: 8),
-                                                      Text(
-                                                        'Join Channel',
-                                                        style: TextStyle(
-                                                          fontSize: 17,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          letterSpacing: 0.5,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 16),
-
-                                        // Divider
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Divider(
-                                                color: Colors.white.withOpacity(
-                                                  0.3,
-                                                ),
-                                                thickness: 1,
-                                              ),
-                                            ),
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                  ),
-                                              child: Text(
-                                                'OR',
-                                                style: TextStyle(
-                                                  color: Colors.white
-                                                      .withOpacity(0.7),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Divider(
-                                                color: Colors.white.withOpacity(
-                                                  0.3,
-                                                ),
-                                                thickness: 1,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-
-                                        const SizedBox(height: 16),
-
-                                        // Quick Join Button
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 56,
-                                          child: OutlinedButton(
-                                            onPressed: _isJoining
-                                                ? null
-                                                : _createQuickChannel,
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: Colors.white,
-                                              side: BorderSide(
-                                                color: Colors.white.withOpacity(
-                                                  0.5,
-                                                ),
-                                                width: 1.5,
-                                              ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: const [
-                                                Icon(
-                                                  Icons.bolt_rounded,
-                                                  size: 22,
-                                                ),
-                                                SizedBox(width: 8),
-                                                Text(
-                                                  'Quick Join',
-                                                  style: TextStyle(
-                                                    fontSize: 17,
-                                                    fontWeight: FontWeight.w600,
-                                                    letterSpacing: 0.5,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // Info Text
+                            const SizedBox(width: 16),
                             Text(
-                              'Share the channel name with others to join',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.7),
-                                fontSize: 13,
+                              'Join Channel',
+                              style: AppTextStyles.h2(
+                                color: Colors.white,
+                                fontWeight: AppTextStyles.bold,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
+
+                      Expanded(
+                        child: Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 28.0),
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 20),
+                                
+                                // Ultra-premium User Info Card
+                                Container(
+                                  constraints: BoxConstraints(maxWidth: 480),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.white.withOpacity(0.25),
+                                        Colors.white.withOpacity(0.15),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(28),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.4),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 40,
+                                        offset: const Offset(0, 20),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(28),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 15,
+                                        sigmaY: 15,
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(28.0),
+                                        child: Row(
+                                          children: [
+                                            // Premium Avatar
+                                            Container(
+                                              width: 72,
+                                              height: 72,
+                                              decoration: BoxDecoration(
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    Colors.white.withOpacity(0.3),
+                                                    Colors.white.withOpacity(0.2),
+                                                  ],
+                                                ),
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white.withOpacity(0.5),
+                                                  width: 3,
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.2),
+                                                    blurRadius: 15,
+                                                    offset: const Offset(0, 8),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  (_currentUserName?.isNotEmpty ?? false)
+                                                      ? _currentUserName![0].toUpperCase()
+                                                      : 'U',
+                                                  style: AppTextStyles.h2(
+                                                    color: Colors.white,
+                                                    fontWeight: AppTextStyles.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 20),
+                                            // User Info
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    _currentUserName ?? 'User',
+                                                    style: AppTextStyles.h4(
+                                                      color: Colors.white,
+                                                      fontWeight: AppTextStyles.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 12,
+                                                        height: 12,
+                                                        decoration: BoxDecoration(
+                                                          color: AppColors.success,
+                                                          shape: BoxShape.circle,
+                                                          boxShadow: [
+                                                            BoxShadow(
+                                                              color: AppColors.success
+                                                                  .withOpacity(0.6),
+                                                              blurRadius: 12,
+                                                              spreadRadius: 3,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 10),
+                                                      Text(
+                                                        'Online',
+                                                        style: AppTextStyles.bodyMedium(
+                                                          color: Colors.white.withOpacity(0.95),
+                                                          fontWeight: AppTextStyles.medium,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 36),
+
+                                // Ultra-premium Channel Input Card
+                                Container(
+                                  constraints: BoxConstraints(maxWidth: 480),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.white.withOpacity(0.25),
+                                        Colors.white.withOpacity(0.15),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(28),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.4),
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 40,
+                                        offset: const Offset(0, 20),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(28),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 15,
+                                        sigmaY: 15,
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(36.0),
+                                        child: Column(
+                                          children: [
+                                            // Title with icon
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.meeting_room_rounded,
+                                                  color: Colors.white,
+                                                  size: 28,
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Text(
+                                                  'Enter Channel',
+                                                  style: AppTextStyles.h3(
+                                                    color: Colors.white,
+                                                    fontWeight: AppTextStyles.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              'Join an existing room or create a new one',
+                                              textAlign: TextAlign.center,
+                                              style: AppTextStyles.bodyMedium(
+                                                color: Colors.white.withOpacity(0.9),
+                                                fontWeight: AppTextStyles.medium,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 36),
+
+                                            // Premium Channel Input
+                                            AppGlassTextField(
+                                              controller: _channelController,
+                                              hintText: 'Channel Name',
+                                              prefixIcon: Icons.tag_rounded,
+                                              textInputAction: TextInputAction.done,
+                                              onSubmitted: (_) => _joinChannel(),
+                                            ),
+
+                                            const SizedBox(height: 24),
+
+                                            // Premium Join Button
+                                            AppPrimaryButton(
+                                              text: 'Join Channel',
+                                              onPressed: _isJoining ? null : _joinChannel,
+                                              isLoading: _isJoining,
+                                              icon: Icons.video_call_rounded,
+                                              width: double.infinity,
+                                              height: 60,
+                                              gradient: const LinearGradient(
+                                                colors: [Colors.white, Colors.white],
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 24),
+
+                                            // Elegant Divider
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Container(
+                                                    height: 1.5,
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          Colors.transparent,
+                                                          Colors.white.withOpacity(0.4),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Padding(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 20,
+                                                  ),
+                                                  child: Text(
+                                                    'OR',
+                                                    style: AppTextStyles.labelMedium(
+                                                      color: Colors.white.withOpacity(0.8),
+                                                      fontWeight: AppTextStyles.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  child: Container(
+                                                    height: 1.5,
+                                                    decoration: BoxDecoration(
+                                                      gradient: LinearGradient(
+                                                        colors: [
+                                                          Colors.white.withOpacity(0.4),
+                                                          Colors.transparent,
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+
+                                            const SizedBox(height: 24),
+
+                                            // Premium Quick Join Button
+                                            AppOutlinedButton(
+                                              text: 'Quick Join',
+                                              onPressed: _isJoining ? null : _createQuickChannel,
+                                              icon: Icons.bolt_rounded,
+                                              width: double.infinity,
+                                              height: 60,
+                                              borderColor: Colors.white.withOpacity(0.6),
+                                              textColor: Colors.white,
+                                              borderWidth: 2,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 28),
+
+                                // Premium Info Badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(30),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.share_rounded,
+                                        color: Colors.white.withOpacity(0.9),
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Share the channel name with others to join',
+                                        style: AppTextStyles.captionLarge(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontWeight: AppTextStyles.medium,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                
+                                const SizedBox(height: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

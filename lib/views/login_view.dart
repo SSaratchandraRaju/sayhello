@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import '../core/theme/app_text_styles.dart';
+import '../widgets/buttons/app_buttons.dart';
+import '../widgets/inputs/app_text_field.dart';
+import '../widgets/snackbar/app_snackbar.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({Key? key}) : super(key: key);
@@ -49,15 +53,9 @@ class _LoginViewState extends State<LoginView>
   Future<void> _joinRoom() async {
     final userName = _nameController.text.trim();
     if (userName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please enter your name'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          backgroundColor: Colors.red.shade400,
-        ),
+      AppSnackbar.error(
+        message: 'Please enter your name to continue',
+        title: 'Name Required',
       );
       return;
     }
@@ -81,212 +79,272 @@ class _LoginViewState extends State<LoginView>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF667eea),
-              const Color(0xFF764ba2),
-              const Color(0xFFf093fb),
+              Color(0xFF7C3AED), // Purple
+              Color(0xFF4F46E5), // Indigo
+              Color(0xFF2E1065), // Deep Purple
             ],
+            stops: [0.0, 0.5, 1.0],
           ),
         ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Glass morphism card
-                      Container(
-                        constraints: BoxConstraints(maxWidth: 450),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 40,
-                              offset: const Offset(0, 20),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                            child: Container(
-                              padding: const EdgeInsets.all(40.0),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.white.withOpacity(0.2),
-                                    Colors.white.withOpacity(0.1),
-                                  ],
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  // Logo/Icon
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.25),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.3),
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: const Icon(
-                                      Icons.videocam_rounded,
-                                      size: 40,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 32),
+        child: Stack(
+          children: [
+            // Animated gradient orbs
+            ...List.generate(4, (index) {
+              return Positioned(
+                top: index == 0
+                    ? -80
+                    : (index == 1
+                        ? 150
+                        : null),
+                bottom: index == 2 || index == 3 ? -100 : null,
+                left: index == 1 || index == 3 ? -80 : null,
+                right: index == 0 || index == 2 ? -80 : null,
+                child: Container(
+                  width: index == 3 ? 250 : 350,
+                  height: index == 3 ? 250 : 350,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withOpacity(index == 3 ? 0.08 : 0.12),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
 
-                                  // Title
-                                  const Text(
-                                    'Welcome',
-                                    style: TextStyle(
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-
-                                  // Subtitle
-                                  Text(
-                                    'Enter your details to join the video call',
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.white.withOpacity(0.85),
-                                      height: 1.5,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 40),
-
-                                  // Name Input Field
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Colors.white.withOpacity(0.3),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: TextField(
-                                      controller: _nameController,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: 'Your Name',
-                                        hintStyle: TextStyle(
-                                          color: Colors.white.withOpacity(0.6),
-                                        ),
-                                        prefixIcon: Icon(
-                                          Icons.person_outline_rounded,
-                                          color: Colors.white.withOpacity(0.8),
-                                        ),
-                                        border: InputBorder.none,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 20,
-                                              vertical: 18,
-                                            ),
-                                      ),
-                                      onSubmitted: (_) => _joinRoom(),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 28),
-
-                                  // Join Button
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 56,
-                                    child: ElevatedButton(
-                                      onPressed: _isConnecting
-                                          ? null
-                                          : _joinRoom,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.white,
-                                        foregroundColor: const Color(
-                                          0xFF667eea,
-                                        ),
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                        disabledBackgroundColor: Colors.white
-                                            .withOpacity(0.7),
-                                      ),
-                                      child: _isConnecting
-                                          ? SizedBox(
-                                              height: 24,
-                                              width: 24,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2.5,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<
-                                                      Color
-                                                    >(const Color(0xFF667eea)),
-                                              ),
-                                            )
-                                          : const Text(
-                                              'Join Call',
-                                              style: TextStyle(
-                                                fontSize: 17,
-                                                fontWeight: FontWeight.w600,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
-                                    ),
-                                  ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Ultra-premium glass morphism card
+                          Container(
+                            constraints: BoxConstraints(maxWidth: 480),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white.withOpacity(0.28),
+                                  Colors.white.withOpacity(0.18),
                                 ],
                               ),
+                              borderRadius: BorderRadius.circular(32),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.45),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 50,
+                                  offset: const Offset(0, 25),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(44.0),
+                                  child: Column(
+                                    children: [
+                                      // Ultra-Premium Logo with glow
+                                      Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          // Outer glow
+                                          Container(
+                                            width: 130,
+                                            height: 130,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.white.withOpacity(0.35),
+                                                  blurRadius: 50,
+                                                  spreadRadius: 8,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          // Logo container
+                                          Container(
+                                            width: 110,
+                                            height: 110,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                                colors: [
+                                                  Colors.white.withOpacity(0.35),
+                                                  Colors.white.withOpacity(0.25),
+                                                ],
+                                              ),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: Colors.white.withOpacity(0.5),
+                                                width: 4,
+                                              ),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.2),
+                                                  blurRadius: 30,
+                                                  offset: const Offset(0, 15),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Icon(
+                                              Icons.videocam_rounded,
+                                              size: 56,
+                                              color: Colors.white,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Colors.black.withOpacity(0.3),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 44),
+
+                                      // Premium Title
+                                      Text(
+                                        'Welcome',
+                                        style: AppTextStyles.display1(
+                                          color: Colors.white,
+                                          fontWeight: AppTextStyles.bold,
+                                        ).copyWith(
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withOpacity(0.3),
+                                              blurRadius: 15,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 14),
+
+                                      // Premium Subtitle
+                                      Text(
+                                        'Enter your details to join the video call',
+                                        textAlign: TextAlign.center,
+                                        style: AppTextStyles.bodyLarge(
+                                          color: Colors.white.withOpacity(0.95),
+                                          fontWeight: AppTextStyles.medium,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 48),
+
+                                      // Premium Name Input Field
+                                      AppGlassTextField(
+                                        controller: _nameController,
+                                        hintText: 'Your Name',
+                                        prefixIcon: Icons.badge_rounded,
+                                        textInputAction: TextInputAction.done,
+                                        onSubmitted: (_) => _joinRoom(),
+                                      ),
+                                      const SizedBox(height: 32),
+
+                                      // Ultra-Premium Join Button
+                                      AppPrimaryButton(
+                                        text: 'Join Call',
+                                        onPressed: _isConnecting ? null : _joinRoom,
+                                        isLoading: _isConnecting,
+                                        width: double.infinity,
+                                        height: 62,
+                                        icon: Icons.video_call_rounded,
+                                        gradient: const LinearGradient(
+                                          colors: [Colors.white, Colors.white],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+                          const SizedBox(height: 40),
 
-                      // Footer text
-                      Text(
-                        'Secure • Encrypted • Private',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 13,
-                          letterSpacing: 1.5,
-                        ),
+                          // Premium security badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.15),
+                                  Colors.white.withOpacity(0.1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.35),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.12),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.security_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Text(
+                                  'Secure • Encrypted • Private',
+                                  style: AppTextStyles.bodyMedium(
+                                    color: Colors.white.withOpacity(0.95),
+                                    fontWeight: AppTextStyles.semiBold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

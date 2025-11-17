@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../services/agora_rtm_service.dart';
 import '../services/ringtone_service.dart';
 import '../models/user_model.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_text_styles.dart';
 import 'dart:async';
 
 class IncomingCallScreen extends StatefulWidget {
@@ -133,180 +135,394 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
           width: double.infinity,
           height: double.infinity,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: widget.isVideo
-                  ? [const Color(0xFF667eea), const Color(0xFF764ba2)]
-                  : [Colors.green.shade700, Colors.green.shade900],
-            ),
+            gradient: widget.isVideo
+                ? AppColors.videoCallGradient
+                : AppColors.voiceCallGradient,
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Text(
-                    'Incoming ${widget.isVideo ? 'Video' : 'Voice'} Call',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ),
-
-                const Spacer(),
-
-                // Caller Avatar with pulse animation
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    return Container(
-                      width: 160 + (_pulseController.value * 20),
-                      height: 160 + (_pulseController.value * 20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.1),
-                      ),
-                      child: Center(
+          child: Stack(
+            children: [
+              // Animated background particles effect
+              ...List.generate(20, (index) {
+                return Positioned(
+                  top: (index * 50.0) % MediaQuery.of(context).size.height,
+                  left: (index * 80.0) % MediaQuery.of(context).size.width,
+                  child: AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      return Opacity(
+                        opacity: 0.1 + (_pulseController.value * 0.05),
                         child: Container(
-                          width: 140,
-                          height: 140,
+                          width: 4,
+                          height: 4,
                           decoration: BoxDecoration(
+                            color: Colors.white,
                             shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(0.2),
-                            border: Border.all(color: Colors.white, width: 3),
-                          ),
-                          child: Center(
-                            child: Text(
-                              widget.callerName[0].toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 60,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 32),
-
-                // Caller Name
-                Text(
-                  widget.callerName,
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                      );
+                    },
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Ringing text
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                );
+              }),
+              
+              SafeArea(
+                child: Column(
                   children: [
-                    Icon(
-                      widget.isVideo ? Icons.videocam : Icons.phone,
-                      color: Colors.white.withOpacity(0.9),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'is calling you...',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
+                    // Enhanced Header with blur
+                    Container(
+                      margin: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            widget.isVideo ? Icons.videocam_rounded : Icons.phone,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Incoming ${widget.isVideo ? 'Video' : 'Voice'} Call',
+                            style: AppTextStyles.h6(
+                              color: Colors.white,
+                              fontWeight: AppTextStyles.semiBold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
+                    const Spacer(),
+
+                    // Premium Caller Avatar with enhanced pulse animation
+                    AnimatedBuilder(
+                      animation: _pulseController,
+                      builder: (context, child) {
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Outer glow ring
+                            Container(
+                              width: 220 + (_pulseController.value * 40),
+                              height: 220 + (_pulseController.value * 40),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    Colors.white.withOpacity(0.0),
+                                    Colors.white.withOpacity(0.1),
+                                    Colors.white.withOpacity(0.0),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            // Middle ring
+                            Container(
+                              width: 200 + (_pulseController.value * 30),
+                              height: 200 + (_pulseController.value * 30),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.08),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.2),
+                                    blurRadius: 30,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Avatar container
+                            Container(
+                              width: 180,
+                              height: 180,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white.withOpacity(0.3),
+                                    Colors.white.withOpacity(0.2),
+                                  ],
+                                ),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 30,
+                                    offset: const Offset(0, 15),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  widget.callerName[0].toUpperCase(),
+                                  style: AppTextStyles.display1(
+                                    color: Colors.white,
+                                    fontWeight: AppTextStyles.black,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 48),
+
+                    // Enhanced Caller Name with shadow
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Column(
+                        children: [
+                          Text(
+                            widget.callerName,
+                            style: AppTextStyles.display2(
+                              color: Colors.white,
+                              fontWeight: AppTextStyles.bold,
+                            ).copyWith(
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Premium ringing indicator
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.4),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.white.withOpacity(0.5),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'is calling you...',
+                            style: AppTextStyles.bodyLarge(
+                              color: Colors.white,
+                              fontWeight: AppTextStyles.semiBold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const Spacer(),
+
+                    // Premium Action Buttons
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(48, 0, 48, 48),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Decline Button - Elegant coral, not harsh red
+                          _PremiumCallButton(
+                            icon: Icons.call_end_rounded,
+                            onPressed: _declineCall,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.error,
+                                AppColors.error.withOpacity(0.8),
+                              ],
+                            ),
+                            label: 'Decline',
+                            size: 80,
+                          ),
+
+                          // Accept Button - Success gradient
+                          _PremiumCallButton(
+                            icon: widget.isVideo
+                                ? Icons.videocam_rounded
+                                : Icons.phone_rounded,
+                            onPressed: _acceptCall,
+                            gradient: AppColors.successGradient,
+                            label: 'Accept',
+                            size: 80,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
-                const Spacer(),
+/// Ultra-premium call button with gradient and animations
+class _PremiumCallButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final Gradient gradient;
+  final String label;
+  final double size;
 
-                // Action Buttons
-                Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Decline Button
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: _declineCall,
-                            child: Container(
-                              width: 70,
-                              height: 70,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.call_end,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Decline',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+  const _PremiumCallButton({
+    required this.icon,
+    this.onPressed,
+    required this.gradient,
+    required this.label,
+    required this.size,
+  });
+
+  @override
+  State<_PremiumCallButton> createState() => _PremiumCallButtonState();
+}
+
+class _PremiumCallButtonState extends State<_PremiumCallButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onPressed?.call();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final scale = 1.0 - (_controller.value * 0.1);
+          return Transform.scale(
+            scale: scale,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: widget.size,
+                  height: widget.size,
+                  decoration: BoxDecoration(
+                    gradient: widget.gradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 25,
+                        offset: const Offset(0, 12),
                       ),
-
-                      // Accept Button
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: _acceptCall,
-                            child: Container(
-                              width: 70,
-                              height: 70,
-                              decoration: const BoxDecoration(
-                                color: Colors.green,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                widget.isVideo ? Icons.videocam : Icons.phone,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Accept',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.1),
+                        blurRadius: 15,
+                        spreadRadius: -5,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: Colors.white,
+                    size: widget.size * 0.45,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  widget.label,
+                  style: AppTextStyles.labelLarge(
+                    color: Colors.white,
+                    fontWeight: AppTextStyles.bold,
+                  ).copyWith(
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

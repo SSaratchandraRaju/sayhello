@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../core/theme/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/credits_service.dart';
 import '../services/online_users_service.dart';
 import '../services/agora_rtm_service.dart';
+import '../widgets/dialogs/call_confirmation_dialog.dart';
 import 'incoming_call_screen.dart';
 import 'chat_view.dart';
 
@@ -237,85 +239,13 @@ class _UsersListViewState extends State<UsersListView> {
       return;
     }
 
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
+    // Show premium call confirmation dialog
+    final confirmed = await CallConfirmationDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('${isVideo ? 'Video' : 'Voice'} Call'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Call ${user.name}?'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: Colors.orange.shade700,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Call Charges',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange.shade900,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${isVideo ? '80' : '40'} credits per minute',
-                    style: TextStyle(
-                      color: Colors.orange.shade900,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Available: ${_creditsService.getRemainingCallTime(isVideo)} minutes',
-                    style: TextStyle(
-                      color: Colors.orange.shade700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isVideo ? const Color(0xFF667eea) : Colors.green,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Call'),
-          ),
-        ],
-      ),
+      userName: user.name,
+      isVideo: isVideo,
+      creditsPerMinute: isVideo ? 80 : 40,
+      availableMinutes: _creditsService.getRemainingCallTime(isVideo).toString(),
     );
 
     if (confirmed == true) {
@@ -361,7 +291,7 @@ class _UsersListViewState extends State<UsersListView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.error_outline, color: Colors.red.shade400),
+            Icon(Icons.account_balance_wallet_rounded, color: AppColors.accentGold),
             const SizedBox(width: 12),
             const Text('Insufficient Credits'),
           ],
@@ -468,7 +398,7 @@ class _UsersListViewState extends State<UsersListView> {
                               Icon(
                                 Icons.monetization_on,
                                 color: credits < 100
-                                    ? Colors.red.shade400
+                                    ? AppColors.accentAmber
                                     : const Color(0xFFffa000),
                                 size: 20,
                               ),
@@ -479,7 +409,7 @@ class _UsersListViewState extends State<UsersListView> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: credits < 100
-                                      ? Colors.red.shade700
+                                      ? AppColors.cost
                                       : const Color(0xFF667eea),
                                 ),
                               ),

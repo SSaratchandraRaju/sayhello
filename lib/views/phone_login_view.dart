@@ -199,18 +199,21 @@ class _PhoneLoginViewState extends State<PhoneLoginView> {
                             // Phone Number Input
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
-                                  width: 1,
-                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
                               child: TextField(
                                 controller: _phoneController,
                                 keyboardType: TextInputType.phone,
                                 style: const TextStyle(
-                                  color: Colors.white,
+                                  color: Color(0xFF2d3436),
                                   fontSize: 18,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -221,35 +224,37 @@ class _PhoneLoginViewState extends State<PhoneLoginView> {
                                 decoration: InputDecoration(
                                   hintText: 'Phone Number',
                                   hintStyle: TextStyle(
-                                    color: Colors.white.withOpacity(0.6),
+                                    color: Colors.grey.shade500,
                                   ),
                                   prefixIcon: Container(
+                                    margin: const EdgeInsets.only(right: 12),
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF667eea),
+                                      borderRadius: const BorderRadius.only(
+                                        topLeft: Radius.circular(16),
+                                        bottomLeft: Radius.circular(16),
+                                      ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
-                                      children: [
+                                      children: const [
                                         Icon(
                                           Icons.phone,
-                                          color: Colors.white.withOpacity(0.8),
+                                          color: Colors.white,
+                                          size: 20,
                                         ),
-                                        const SizedBox(width: 8),
+                                        SizedBox(width: 8),
                                         Text(
                                           '+91',
                                           style: TextStyle(
-                                            color: Colors.white.withOpacity(
-                                              0.9,
-                                            ),
+                                            color: Colors.white,
                                             fontSize: 18,
-                                            fontWeight: FontWeight.w500,
+                                            fontWeight: FontWeight.bold,
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          width: 1,
-                                          height: 24,
-                                          color: Colors.white.withOpacity(0.3),
                                         ),
                                       ],
                                     ),

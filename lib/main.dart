@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'routes/app_pages.dart';
@@ -11,6 +12,7 @@ import 'config/app_config.dart';
 import 'config/environment_config.dart';
 import 'core/network/api_client.dart';
 import 'core/di/dependency_injection.dart';
+import 'core/theme/app_theme.dart';
 import 'utils/agora_token_builder.dart';
 // screens are imported by the route definitions in `app_pages.dart`
 
@@ -128,10 +130,21 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    // Set system UI overlay style
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+    );
+
     return GetMaterialApp(
       title: 'Say Hello!',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light, // Change to ThemeMode.system for auto theme
       navigatorKey: navigatorKey,
       initialRoute: Routes.PHONE_LOGIN,
       getPages: AppPages.pages,
